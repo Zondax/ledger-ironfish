@@ -70,11 +70,16 @@ ifndef ICONNAME
 $(error ICONNAME is not set)
 endif
 
+
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.platform
 CFLAGS += -Wvla
 APP_CUSTOM_LINK_DEPENDENCIES = rust
 LDLIBS += -Lrust/target/thumbv6m-none-eabi/release -lrslib
 APP_SOURCE_PATH += $(CURDIR)/rust/include
+
+DEFINES += HAVE_HASH HAVE_BLAKE2
+INCLUDES_PATH += $(BOLOS_SDK)/lib_cxng/src
+
 
 .PHONY: rust
 rust:

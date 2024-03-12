@@ -178,7 +178,7 @@ target_include_directories(unittests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/lib
         ###
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/BLAKE2/ref
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/blake2/ref
         )
 
 target_link_libraries(unittests PRIVATE
