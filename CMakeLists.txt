@@ -14,11 +14,11 @@
 #*  limitations under the License.
 #********************************************************************************
 cmake_minimum_required(VERSION 3.0)
-project(ledger-template VERSION 0.0.0)
+project(ledger-ironfish VERSION 0.0.0)
 enable_testing()
 
 cmake_policy(SET CMP0025 NEW)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 
 option(ENABLE_FUZZING "Build with fuzzing instrumentation and build fuzz targets" OFF)
 option(ENABLE_COVERAGE "Build with source code coverage instrumentation" OFF)
@@ -116,6 +116,11 @@ file(GLOB_RECURSE LIB_SRC
         ####
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_impl.c
+        ####
+        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/crypto_helper.c
+        ####
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/BLAKE2/ref/blake2b-ref.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/BLAKE2/ref/blake2s-ref.c
         )
 
 add_library(app_lib STATIC ${LIB_SRC})
@@ -125,9 +130,40 @@ target_include_directories(app_lib PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/common
+        ###
+        ${CMAKE_CURRENT_SOURCE_DIR}/app/rust/include
+        ###
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/BLAKE2/ref
+
         )
 
 ##############################################################
+## Rust library
+set(RUST_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/app/rust")
+set(RUST_TARGET_DIR "${RUST_LIB_DIR}/target/aarch64-apple-darwin/release")
+
+# Custom target for the Rust library
+add_custom_target(RustLibClean
+    COMMAND cargo clean
+    WORKING_DIRECTORY ${RUST_LIB_DIR}
+)
+add_custom_target(RustLibBuild
+    COMMAND cargo build --release --target=aarch64-apple-darwin
+    WORKING_DIRECTORY ${RUST_LIB_DIR}
+    DEPENDS RustLibClean
+)
+
+# Assuming the Rust library outputs a file named librslib.a
+set(RUST_LIB "${RUST_TARGET_DIR}/librslib.a")
+
+# Ensure the Rust library is built before the C++ project
+add_library(rslib STATIC IMPORTED)
+set_property(TARGET rslib PROPERTY IMPORTED_LOCATION ${RUST_LIB})
+add_dependencies(rslib RustLibBuild)
+
+# Ensure your C++ targets depend on the Rust library being built first
+# For example, for your app_lib static library:
+add_dependencies(app_lib rslib)
 ##############################################################
 #  Tests
 file(GLOB_RECURSE TESTS_SRC
@@ -141,11 +177,14 @@ target_include_directories(unittests PRIVATE
         ${CONAN_INCLUDE_DIRS_JSONCPP}
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/lib
+        ###
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/BLAKE2/ref
         )
 
 target_link_libraries(unittests PRIVATE
         gtest_main
         app_lib
+        rslib
         CONAN_PKG::fmt
         CONAN_PKG::jsoncpp)
 

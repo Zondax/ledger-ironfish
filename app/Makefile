@@ -72,37 +72,22 @@ endif
 
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.platform
 CFLAGS += -Wvla
-# #{TODO} --> Need Rust?
-# LDFLAGS += -z muldefs
-# LDLIBS += -Lrust/target/thumbv6m-none-eabi/release -lrslib
-# APP_SOURCE_PATH += $(CURDIR)/rust/include
+APP_CUSTOM_LINK_DEPENDENCIES = rust
+LDLIBS += -Lrust/target/thumbv6m-none-eabi/release -lrslib
+APP_SOURCE_PATH += $(CURDIR)/rust/include
 
-# #{TODO} --> Need Rust?
 .PHONY: rust
 rust:
-	@echo "No rust code"
+	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo build --target thumbv6m-none-eabi --release
 
 # Before linking, we need to be sure rust lib is there
 bin/app.elf: rust
 
 .PHONY: rust_clean
 rust_clean:
-	@echo "No rust code"
+	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo clean
 
 clean: rust_clean
-
-# .PHONY: rust
-# rust:
-# 	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo build --target thumbv6m-none-eabi --release
-
-# # Before linking, we need to be sure rust lib is there
-# bin/app.elf: rust
-
-# .PHONY: rust_clean
-# rust_clean:
-# 	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo clean
-
-# clean: rust_clean
 
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.side_loading
 
