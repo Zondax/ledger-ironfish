@@ -30,25 +30,18 @@ $(info ************ TARGET_NAME  = [$(TARGET_NAME)])
 
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.app_testing
 
-# #{TODO} --> Need for an special mode?
-# DEFINES += REVIEW_SCREEN_ENABLED APP_BLIND_MODE_ENABLED
-
 ifndef COIN
-COIN=TODO
+COIN=IRON
 endif
 
 include $(CURDIR)/Makefile.version
 
 $(info COIN  = [$(COIN)])
 
-ifeq ($(COIN),TODO)
+ifeq ($(COIN),IRON)
 # Main app configuration
-DEFINES += APP_STANDARD
-ifneq ($(TARGET_NAME),TARGET_NANOS)
-DEFINES += SUBSTRATE_PARSER_FULL
-endif
-APPNAME = "Template"
-APPPATH = "44'/283'"
+APPNAME = "Ironfish"
+APPPATH = "44'/133'"
 
 else
 define error_message
@@ -59,7 +52,7 @@ endef
 $(error "$(error_message)")
 endif
 
-APP_LOAD_PARAMS =  --curve secp256k1 --delete $(COMMON_LOAD_PARAMS) --path $(APPPATH)
+APP_LOAD_PARAMS =  --curve ed25519 --delete $(COMMON_LOAD_PARAMS) --path $(APPPATH)
 
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.devices
 
@@ -89,9 +82,6 @@ RUST_TARGET:=thumbv6m-none-eabi
 rust:
 	cd rust && RUSTC_BOOTSTRAP=1 CARGO_HOME="$(CURDIR)/rust/.cargo" cargo build --target $(RUST_TARGET) --release
 
-# Before linking, we need to be sure rust lib is there
-bin/app.elf: rust
-
 .PHONY: rust_clean
 rust_clean:
 	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo clean
@@ -107,7 +97,7 @@ include $(BOLOS_SDK)/Makefile.rules
 dep/%.d: %.c Makefile
 
 listvariants:
-	@echo VARIANTS COIN template
+	@echo VARIANTS COIN IRON
 
 .PHONY: version
 version:

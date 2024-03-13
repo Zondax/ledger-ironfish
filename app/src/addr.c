@@ -22,13 +22,15 @@
 #include "zxerror.h"
 #include "zxformat.h"
 #include "zxmacros.h"
+#include "keys_def.h"
+#include "os.h"
 
 zxerr_t addr_getNumItems(uint8_t *num_items) {
-    zemu_log_stack("addr_getNumItems");
-    *num_items = 1;
-    if (app_mode_expert()) {
-        *num_items = 2;
+    if (num_items == NULL) {
+        return zxerr_no_data;
     }
+    // Display [public address | ivk | ovk | path]
+    *num_items = 4;
     return zxerr_ok;
 }
 
@@ -39,20 +41,30 @@ zxerr_t addr_getItem(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "Address");
-            pageString(outVal, outValLen, (char *)(G_io_apdu_buffer + PK_LEN_25519), pageIdx, pageCount);
-            return zxerr_ok;
-        case 1: {
-            if (!app_mode_expert()) {
-                return zxerr_no_data;
-            }
-
-            snprintf(outKey, outKeyLen, "Your Path");
+            const char* address = (const char*)G_io_apdu_buffer;
+            pageStringHex(outVal, outValLen, address, KEY_LENGTH, pageIdx, pageCount);
+            break;
+        case 1:
+            snprintf(outKey, outKeyLen, "IVK");
+            const char* ivk = (const char*)G_io_apdu_buffer + KEY_LENGTH;
+            pageStringHex(outVal, outValLen, ivk, KEY_LENGTH, pageIdx, pageCount);
+            break;
+        case 2:
+            snprintf(outKey, outKeyLen, "OVK");
+            const char* ovk = (const char*)G_io_apdu_buffer + 2 * KEY_LENGTH;
+            pageStringHex(outVal, outValLen, ovk, KEY_LENGTH, pageIdx, pageCount);
+            break;
+        case 3: {
+            snprintf(outKey, outKeyLen, "HD Path");
             char buffer[300];
             bip32_to_str(buffer, sizeof(buffer), hdPath, HDPATH_LEN_DEFAULT);
             pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-            return zxerr_ok;
+            break;
         }
+
         default:
             return zxerr_no_data;
     }
+
+    return zxerr_ok;
 }
