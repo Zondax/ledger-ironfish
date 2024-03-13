@@ -33,9 +33,9 @@ extern "C" {
     }                          \
   } while (0)
 
-const uint8_t MODIFIER_ASK = 0x00;
-const uint8_t MODIFIER_NSK = 0x01;
-const uint8_t MODIFIER_OVK = 0x02;
+#define MODIFIER_ASK 0x00
+#define MODIFIER_NSK 0x01
+#define MODIFIER_OVK 0x02
 
 parser_error_t convertKey(const uint8_t spendingKey[32], const uint8_t modifier, uint8_t outputKey[32], bool reduceWideByte);
 parser_error_t generate_key(const uint8_t expandedKey[32], constant_key_t keyType, uint8_t output[32]);

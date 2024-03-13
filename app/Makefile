@@ -59,7 +59,7 @@ endef
 $(error "$(error_message)")
 endif
 
-APP_LOAD_PARAMS =  --curve ed25519 --delete $(COMMON_LOAD_PARAMS) --path $(APPPATH)
+APP_LOAD_PARAMS =  --curve secp256k1 --delete $(COMMON_LOAD_PARAMS) --path $(APPPATH)
 
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.devices
 
@@ -76,6 +76,9 @@ CFLAGS += -Wvla
 APP_CUSTOM_LINK_DEPENDENCIES = rust
 LDLIBS += -Lrust/target/thumbv6m-none-eabi/release -lrslib
 APP_SOURCE_PATH += $(CURDIR)/rust/include
+
+# Include blake2s implementation from deps since it's not supported by the SDK
+APP_SOURCE_PATH += $(CURDIR)/../deps/blake2/ref/blake2s-ref.c
 
 DEFINES += HAVE_HASH HAVE_BLAKE2
 INCLUDES_PATH += $(BOLOS_SDK)/lib_cxng/src

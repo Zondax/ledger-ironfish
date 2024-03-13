@@ -49,9 +49,19 @@ typedef uint8_t ovk_t[KEY_LENGTH];
 typedef uint8_t public_address_t[KEY_LENGTH];
 
 typedef struct {
-    bytes_t spendingKey;
-    bytes_t ask;
-    bytes_t nsk;
+    spending_key_t spendingKey;
+    union {
+        ask_t ask;
+        ak_t ak;
+    };
+    union {
+        nsk_t nsk;
+        nk_t nk;
+    };
+
+    ivk_t ivk;
+    ovk_t ovk;
+    public_address_t address;
 } keys_t;
 
 #ifdef __cplusplus

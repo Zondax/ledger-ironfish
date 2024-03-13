@@ -26,13 +26,13 @@
 using namespace std;
 struct IronfishKeys {
         string spendingKey;
-        string spendAuthorizationKey;
-        string proofAuthorizationKey;
-        string authorizing_key;
-        string nullifier_deriving_key;
-        string viewKey;
-        string incomingViewingKey;
-        string outgoingViewingKey;
+        string spendAuthorizationKey;   //ask
+        string proofAuthorizationKey;   //nsk
+        string authorizing_key;         //ak
+        string nullifier_deriving_key;  //nk
+        string viewKey;                 //full viewing key (FVK)
+        string incomingViewingKey;      //ivk
+        string outgoingViewingKey;      //ovk
         string publicAddress;
 };
 
@@ -250,55 +250,44 @@ vector<IronfishKeys> testvectors {
 
 TEST(Keys, SpendingAuthorizationKey) {
     for (const auto& testcase : testvectors) {
-        spending_key_t spendingKey = {0};
-
-        ask_t spendAuthorizationKey = {0};
-        nsk_t proofAuthorizationKey = {0};
-
-        ak_t authorizing_key = {0};
-        nk_t nullifier_deriving_key = {0};
-
-        ivk_t incomingViewingKey = {0};
-        ovk_t outgoingViewingKey = {0};
-
-        public_address_t publicAddress = {0};
+        keys_t keys = {0};
 
         // Read spendingKey from testvectors
-        parseHexString(spendingKey, sizeof(spendingKey), testcase.spendingKey.c_str());
+        parseHexString(keys.spendingKey, sizeof(keys.spendingKey), testcase.spendingKey.c_str());
 
         // Compute ask and nsk
-        ASSERT_EQ(convertKey(spendingKey, MODIFIER_ASK, spendAuthorizationKey, true), parser_ok);
-        const string ask = toHexString(spendAuthorizationKey, 32);
+        ASSERT_EQ(convertKey(keys.spendingKey, MODIFIER_ASK, keys.ask, true), parser_ok);
+        const string ask = toHexString(keys.ask, 32);
         EXPECT_EQ(ask, testcase.spendAuthorizationKey);
 
-        ASSERT_EQ(convertKey(spendingKey, MODIFIER_NSK, proofAuthorizationKey, true), parser_ok);
-        const string nsk = toHexString(proofAuthorizationKey, 32);
+        ASSERT_EQ(convertKey(keys.spendingKey, MODIFIER_NSK, keys.nsk, true), parser_ok);
+        const string nsk = toHexString(keys.nsk, 32);
         EXPECT_EQ(nsk, testcase.proofAuthorizationKey);
 
         // Compute ak and nk
-        generate_key(spendAuthorizationKey, SpendingKeyGenerator, authorizing_key);
-        const string ak = toHexString(authorizing_key, 32);
+        generate_key(keys.ask, SpendingKeyGenerator, keys.ak);
+        const string ak = toHexString(keys.ak, 32);
         EXPECT_EQ(ak, testcase.authorizing_key);
 
-        generate_key(proofAuthorizationKey, ProofGenerationKeyGenerator, nullifier_deriving_key);
-        const string nk = toHexString(nullifier_deriving_key, 32);
+        generate_key(keys.nsk, ProofGenerationKeyGenerator, keys.nk);
+        const string nk = toHexString(keys.nk, 32);
         EXPECT_EQ(nk, testcase.nullifier_deriving_key);
 
         const string viewKey = ak + nk;
         EXPECT_EQ(viewKey, testcase.viewKey);
 
         // Compute ivk and ovk
-        computeIVK(authorizing_key, nullifier_deriving_key, incomingViewingKey);
-        const string ivk = toHexString(incomingViewingKey, 32);
+        computeIVK(keys.ak, keys.nk, keys.ivk);
+        const string ivk = toHexString(keys.ivk, 32);
         EXPECT_EQ(ivk, testcase.incomingViewingKey);
 
-        ASSERT_EQ(convertKey(spendingKey, MODIFIER_OVK, outgoingViewingKey, false), parser_ok);
-        const string ovk = toHexString(outgoingViewingKey, 32);
+        ASSERT_EQ(convertKey(keys.spendingKey, MODIFIER_OVK, keys.ovk, false), parser_ok);
+        const string ovk = toHexString(keys.ovk, 32);
         EXPECT_EQ(ovk, testcase.outgoingViewingKey);
 
 
-        ASSERT_EQ(generate_key(incomingViewingKey, PublicKeyGenerator, publicAddress), parser_ok);
-        const string address = toHexString(publicAddress, 32);
+        ASSERT_EQ(generate_key(keys.ivk, PublicKeyGenerator, keys.address), parser_ok);
+        const string address = toHexString(keys.address, 32);
         EXPECT_EQ(address, testcase.publicAddress);
     }
 }
