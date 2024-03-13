@@ -15,7 +15,7 @@
  *  limitations under the License.
  ******************************************************************************* */
 import { P2_VALUES, PREHASH_LEN, SIGRSLEN } from "./consts";
-import { ResponseAddress, ResponseSign, TemplateIns } from "./types";
+import { ResponseAddress, ResponseSign, IronfishIns } from "./types";
 
 import GenericApp, {
   ConstructorParams,
@@ -29,8 +29,8 @@ import { processGetAddrResponse } from "./helper";
 
 export * from "./types";
 
-export default class TemplateApp extends GenericApp {
-  readonly INS!: TemplateIns;
+export default class IronfishApp extends GenericApp {
+  readonly INS!: IronfishIns;
   constructor(transport: Transport) {
     if (transport == null) throw new Error("Transport has not been defined");
 
