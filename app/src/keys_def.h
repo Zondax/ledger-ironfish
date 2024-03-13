@@ -30,6 +30,7 @@ typedef struct {
 typedef enum {
     SpendingKeyGenerator,
     ProofGenerationKeyGenerator,
+    PublicKeyGenerator,
     InvalidKey,
 } constant_key_t;
 
@@ -44,6 +45,8 @@ typedef uint8_t nk_t[KEY_LENGTH];
 
 typedef uint8_t ivk_t[KEY_LENGTH];
 typedef uint8_t ovk_t[KEY_LENGTH];
+
+typedef uint8_t public_address_t[KEY_LENGTH];
 
 typedef struct {
     bytes_t spendingKey;

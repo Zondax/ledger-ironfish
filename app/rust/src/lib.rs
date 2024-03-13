@@ -39,6 +39,7 @@ pub enum ParserError {
 pub enum ConstantKey {
     SpendingKeyGenerator,
     ProofGenerationKeyGenerator,
+    PublicKeyGenerator,
 }
 
 #[no_mangle]
@@ -53,6 +54,7 @@ pub extern "C" fn scalar_multiplication(input: &[u8; 32], key: ConstantKey, outp
     let key_point = match key {
         ConstantKey::SpendingKeyGenerator => constants::SPENDING_KEY_GENERATOR,
         ConstantKey::ProofGenerationKeyGenerator => constants::PROOF_GENERATION_KEY_GENERATOR,
+        ConstantKey::PublicKeyGenerator => constants::PUBLIC_KEY_GENERATOR,
     };
 
     let extended_point = key_point.multiply_bits(input);
