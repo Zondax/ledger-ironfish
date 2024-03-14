@@ -119,8 +119,8 @@ file(GLOB_RECURSE LIB_SRC
         ####
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/crypto_helper.c
         ####
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/BLAKE2/ref/blake2b-ref.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/BLAKE2/ref/blake2s-ref.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/blake2/ref/blake2b-ref.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/blake2s/blake2s-ref.c
         )
 
 add_library(app_lib STATIC ${LIB_SRC})
@@ -133,7 +133,7 @@ target_include_directories(app_lib PUBLIC
         ###
         ${CMAKE_CURRENT_SOURCE_DIR}/app/rust/include
         ###
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/BLAKE2/ref
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/blake2/ref
 
         )
 

@@ -22,11 +22,9 @@
 
  #if defined (LEDGER_SPECIFIC)
     #include "cx.h"
-    #include "cx_blake2.h"
     #include "cx_blake2b.h"
-#else
-    #include "blake2.h"
 #endif
+    #include "blake2.h"
 
 static void swap_endian(uint8_t *data, int8_t len) {
     for (int8_t i = 0; i < len / 2; i++) {
@@ -69,22 +67,17 @@ parser_error_t generate_key(const uint8_t expandedKey[KEY_LENGTH], constant_key_
     uint8_t tmpExpandedKey[KEY_LENGTH] = {0};
     memcpy(tmpExpandedKey, expandedKey, KEY_LENGTH);
     swap_endian(tmpExpandedKey, KEY_LENGTH);
-    return scalar_multiplication(tmpExpandedKey, keyType, output);
+    scalar_multiplication(tmpExpandedKey, keyType, output);
+    return parser_ok;
 }
 
 parser_error_t computeIVK(const ak_t ak, const nk_t nk, ivk_t ivk) {
     blake2s_state state = {0};
-#if defined (LEDGER_SPECIFIC)
-    blake2s_param param = {0};
-    param.digest_length = 32;
-    memcpy(param.personal, CRH_IVK_PERSONALIZATION, sizeof(CRH_IVK_PERSONALIZATION));
-    blake2s_init_param(&state, &param);
-#else
     blake2s_init_with_personalization(&state, 32, (const uint8_t*)CRH_IVK_PERSONALIZATION, sizeof(CRH_IVK_PERSONALIZATION));
-#endif
     blake2s_update(&state, ak, KEY_LENGTH);
     blake2s_update(&state, nk, KEY_LENGTH);
     blake2s_final(&state, ivk, KEY_LENGTH);
+
     ivk[31] &= 0x07;
     swap_endian(ivk, KEY_LENGTH);
     // if ivk == [0; 32] {
