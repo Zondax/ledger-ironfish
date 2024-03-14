@@ -1,6 +1,6 @@
 #*******************************************************************************
 #  Ledger App
-#  (c) 2018 - 2023 Zondax AG
+#  (c) 2018 - 2024 Zondax AG
 #  (c) 2017 Ledger
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -70,23 +70,24 @@ ifndef ICONNAME
 $(error ICONNAME is not set)
 endif
 
-
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.platform
-CFLAGS += -Wvla
-APP_CUSTOM_LINK_DEPENDENCIES = rust
-LDLIBS += -Lrust/target/thumbv6m-none-eabi/release -lrslib
-APP_SOURCE_PATH += $(CURDIR)/rust/include
 
-# Include blake2s implementation from deps since it's not supported by the SDK
-APP_SOURCE_PATH += $(CURDIR)/../deps/blake2/ref/blake2s-ref.c
-
+# Add SDK BLAKE2b
 DEFINES += HAVE_HASH HAVE_BLAKE2
 INCLUDES_PATH += $(BOLOS_SDK)/lib_cxng/src
 
 
+# Building Rust
+LDFLAGS += -z muldefs
+LDLIBS += -L$(MY_DIR)rust/target/$(RUST_TARGET)/release -lrslib
+
+APP_SOURCE_PATH += $(CURDIR)/rust/include
+APP_CUSTOM_LINK_DEPENDENCIES = rust
+RUST_TARGET:=thumbv6m-none-eabi
+
 .PHONY: rust
 rust:
-	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo build --target thumbv6m-none-eabi --release
+	cd rust && RUSTC_BOOTSTRAP=1 CARGO_HOME="$(CURDIR)/rust/.cargo" cargo build --target $(RUST_TARGET) --release
 
 # Before linking, we need to be sure rust lib is there
 bin/app.elf: rust

@@ -138,9 +138,32 @@ target_include_directories(app_lib PUBLIC
         )
 
 ##############################################################
-## Rust library
+## Rust library for CPP tests
 set(RUST_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/app/rust")
-set(RUST_TARGET_DIR "${RUST_LIB_DIR}/target/aarch64-apple-darwin/release")
+
+# Determine the Rust target triple based on the host system
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+    if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64")
+        set(RUST_TARGET_TRIPLE "aarch64-unknown-linux-gnu")
+    elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
+        set(RUST_TARGET_TRIPLE "x86_64-unknown-linux-gnu")
+    else()
+        message(FATAL_ERROR "Unsupported processor: ${CMAKE_HOST_SYSTEM_PROCESSOR}")
+    endif()
+elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+    if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm64")
+        set(RUST_TARGET_TRIPLE "aarch64-apple-darwin")
+    elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
+        set(RUST_TARGET_TRIPLE "x86_64-apple-darwin")
+    else()
+        message(FATAL_ERROR "Unsupported processor: ${CMAKE_HOST_SYSTEM_PROCESSOR}")
+    endif()
+else()
+    message(FATAL_ERROR "Unsupported host system: ${CMAKE_HOST_SYSTEM_NAME}")
+endif()
+
+# Use debug mode for debugging tests
+set(RUST_TARGET_DIR "${RUST_LIB_DIR}/target/${RUST_TARGET_TRIPLE}/debug")
 
 # Custom target for the Rust library
 add_custom_target(RustLibClean
@@ -148,7 +171,7 @@ add_custom_target(RustLibClean
     WORKING_DIRECTORY ${RUST_LIB_DIR}
 )
 add_custom_target(RustLibBuild
-    COMMAND cargo build --release --target=aarch64-apple-darwin
+    COMMAND cargo build --target ${RUST_TARGET_TRIPLE} --features cpp_tests
     WORKING_DIRECTORY ${RUST_LIB_DIR}
     DEPENDS RustLibClean
 )
