@@ -1,5 +1,5 @@
 # Created by .ignore support plugin (hsz.mobi)
-### C template
+### C Ironfish
 # Prerequisites
 *.d
 
@@ -76,3 +76,5 @@ tests_zemu/yarn.lock
 tests_tools/target
 fuzz-*.log
 /scan-build
+app/rust/.cargo/registry
+app/rust/.cargo/.package-cache*

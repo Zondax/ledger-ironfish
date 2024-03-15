@@ -1,6 +1,6 @@
 #*******************************************************************************
 #  Ledger App
-#  (c) 2018 - 2023 Zondax AG
+#  (c) 2018 - 2024 Zondax AG
 #  (c) 2017 Ledger
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,25 +30,18 @@ $(info ************ TARGET_NAME  = [$(TARGET_NAME)])
 
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.app_testing
 
-# #{TODO} --> Need for an special mode?
-# DEFINES += REVIEW_SCREEN_ENABLED APP_BLIND_MODE_ENABLED
-
 ifndef COIN
-COIN=TODO
+COIN=IRON
 endif
 
 include $(CURDIR)/Makefile.version
 
 $(info COIN  = [$(COIN)])
 
-ifeq ($(COIN),TODO)
+ifeq ($(COIN),IRON)
 # Main app configuration
-DEFINES += APP_STANDARD
-ifneq ($(TARGET_NAME),TARGET_NANOS)
-DEFINES += SUBSTRATE_PARSER_FULL
-endif
-APPNAME = "Template"
-APPPATH = "44'/283'"
+APPNAME = "Ironfish"
+APPPATH = "44'/133'"
 
 else
 define error_message
@@ -71,38 +64,29 @@ $(error ICONNAME is not set)
 endif
 
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.platform
-CFLAGS += -Wvla
-# #{TODO} --> Need Rust?
-# LDFLAGS += -z muldefs
-# LDLIBS += -Lrust/target/thumbv6m-none-eabi/release -lrslib
-# APP_SOURCE_PATH += $(CURDIR)/rust/include
 
-# #{TODO} --> Need Rust?
+# Add SDK BLAKE2b
+DEFINES += HAVE_HASH HAVE_BLAKE2
+INCLUDES_PATH += $(BOLOS_SDK)/lib_cxng/src
+
+
+# Building Rust
+LDFLAGS += -z muldefs
+LDLIBS += -L$(MY_DIR)rust/target/$(RUST_TARGET)/release -lrslib
+
+APP_SOURCE_PATH += $(CURDIR)/rust/include
+APP_CUSTOM_LINK_DEPENDENCIES = rust
+RUST_TARGET:=thumbv6m-none-eabi
+
 .PHONY: rust
 rust:
-	@echo "No rust code"
-
-# Before linking, we need to be sure rust lib is there
-bin/app.elf: rust
+	cd rust && RUSTC_BOOTSTRAP=1 CARGO_HOME="$(CURDIR)/rust/.cargo" cargo build --target $(RUST_TARGET) --release
 
 .PHONY: rust_clean
 rust_clean:
-	@echo "No rust code"
+	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo clean
 
 clean: rust_clean
-
-# .PHONY: rust
-# rust:
-# 	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo build --target thumbv6m-none-eabi --release
-
-# # Before linking, we need to be sure rust lib is there
-# bin/app.elf: rust
-
-# .PHONY: rust_clean
-# rust_clean:
-# 	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo clean
-
-# clean: rust_clean
 
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.side_loading
 
@@ -113,7 +97,7 @@ include $(BOLOS_SDK)/Makefile.rules
 dep/%.d: %.c Makefile
 
 listvariants:
-	@echo VARIANTS COIN template
+	@echo VARIANTS COIN IRON
 
 .PHONY: version
 version:

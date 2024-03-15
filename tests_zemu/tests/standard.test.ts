@@ -14,16 +14,17 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import Zemu, { zondaxMainmenuNavigation } from '@zondax/zemu'
-import TemplateApp from '@zondax/ledger-template'
+import Zemu, { ButtonKind, zondaxMainmenuNavigation } from '@zondax/zemu'
 import { defaultOptions, models, txBlobExample } from './common'
-
-// @ts-expect-error
-import ed25519 from 'ed25519-supercop'
-
-const accountId = 123
+import IronfishApp from '@zondax/ledger-ironfish'
 
 jest.setTimeout(60000)
+
+const PATH = "m/44'/133'/0'/0/0"
+
+const expectedPublicAddress = "b3ad098e86bc31de35ec5a77cce6aed08d5336bf273abef5e7eb420278a0c19c"
+const expectedIVK = "043e34aa9a6323b82a899d984081ce53e3bb47b2ffa18a0dcfa6910a6d278c73"
+const expectedOVK = "316c96f058f7e188acc90d90d1d765bd9b9ce9e5fa3655c74e8450df0191ee21"
 
 describe('Standard', function () {
   test.concurrent.each(models)('can start and stop container', async function (m) {
@@ -50,7 +51,7 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      const app = new TemplateApp(sim.getTransport())
+      const app = new IronfishApp(sim.getTransport())
       const resp = await app.getVersion()
 
       console.log(resp)
@@ -66,52 +67,49 @@ describe('Standard', function () {
     }
   })
 
-  // test.concurrent.each(models)('get address', async function (m) {
-  //   const sim = new Zemu(m.path)
-  //   try {
-  //     await sim.start({ ...defaultOptions, model: m.name })
-  //     const app = new TemplateApp(sim.getTransport())
+  test.concurrent.each(models)('get address', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new IronfishApp(sim.getTransport())
 
-  //     //Define HDPATH
-  //     const resp = await app.getAddressAndPubKey(accountId)
+      const resp = await app.getAddressAndPubKey(PATH)
+      console.log(resp)
 
-  //     console.log(resp)
+      expect(resp.returnCode).toEqual(0x9000)
+      expect(resp.errorMessage).toEqual('No errors')
 
-  //     expect(resp.return_code).toEqual(0x9000)
-  //     expect(resp.error_message).toEqual('No errors')
+      expect(resp.publicAddress?.toString('hex')).toEqual(expectedPublicAddress)
+      expect(resp.ivk?.toString('hex')).toEqual(expectedIVK)
+      expect(resp.ovk?.toString('hex')).toEqual(expectedOVK)
+    } finally {
+      await sim.close()
+    }
+  })
 
-  //     const expected_address = 'BX63ZW4O5PWWFDH3J33QEB5YN7IN5XOKPDUQ5DCZ232EDY4DWN3XKUQRCA'
-  //     const expected_pk = '0dfdbcdb8eebed628cfb4ef70207b86fd0deddca78e90e8c59d6f441e383b377'
+  test.concurrent.each(models)('show address', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({...defaultOptions, model: m.name,
+                       approveKeyword: m.name === 'stax' ? 'QR' : '',
+                       approveAction: ButtonKind.ApproveTapButton,})
+      const app = new IronfishApp(sim.getTransport())
 
-  //     expect(resp.publicKey).toEqual(expected_pk)
-  //     expect(resp.address).toEqual(expected_address)
-  //   } finally {
-  //     await sim.close()
-  //   }
-  // })
+      const respRequest = app.showAddressAndPubKey(PATH)
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-show_address`)
 
-  // test.concurrent.each(models)('show address', async function (m) {
-  //   const sim = new Zemu(m.path)
-  //   try {
-  //     await sim.start({...defaultOptions, model: m.name,
-  //                      approveKeyword: m.name === 'stax' ? 'QR' : '',
-  //                      approveAction: ButtonKind.ApproveTapButton,})
-  //     const app = new TemplateApp(sim.getTransport())
+      const resp = await respRequest
+      console.log(resp)
 
-  //     const respRequest = app.getAddressAndPubKey(accountId, true)
-  //     // Wait until we are not in the main menu
-  //     await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-  //     await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-show_address`)
+      expect(resp.returnCode).toEqual(0x9000)
+      expect(resp.errorMessage).toEqual('No errors')
 
-  //     const resp = await respRequest
-  //     console.log(resp)
-
-  //     expect(resp.return_code).toEqual(0x9000)
-  //     expect(resp.error_message).toEqual('No errors')
-  //   } finally {
-  //     await sim.close()
-  //   }
-  // })
+    } finally {
+      await sim.close()
+    }
+  })
 
   // test.concurrent.each(models)('show address - reject', async function (m) {
   //   const sim = new Zemu(m.path)

@@ -24,7 +24,7 @@ extern "C" {
 
 #define HDPATH_LEN_DEFAULT 5
 #define HDPATH_0_DEFAULT (0x80000000u | 0x2c)   // 44
-#define HDPATH_1_DEFAULT (0x80000000u | 0x11b)  // 283
+#define HDPATH_1_DEFAULT (0x80000000u | 0x85)  // 133
 
 #define HDPATH_2_DEFAULT (0x80000000u | 0u)
 #define HDPATH_3_DEFAULT (0u)
@@ -39,18 +39,14 @@ extern "C" {
 #define ED25519_SIGNATURE_SIZE 64u
 
 #define PK_LEN_25519 32u
-#define SS58_ADDRESS_MAX_LEN 60u
-
-#define MAX_SIGN_SIZE 256u
-#define BLAKE2B_DIGEST_SIZE 32u
 
 #define COIN_AMOUNT_DECIMAL_PLACES 6
-#define COIN_TICKER "TODO "
+#define COIN_TICKER "IRON "
 
-#define MENU_MAIN_APP_LINE1 "Template"
+#define MENU_MAIN_APP_LINE1 "Ironfish"
 #define MENU_MAIN_APP_LINE2 "Ready"
 #define MENU_MAIN_APP_LINE2_SECRET "???"
-#define APPVERSION_LINE1 "Template"
+#define APPVERSION_LINE1 "Ironfish"
 #define APPVERSION_LINE2 "v" APPVERSION
 
 #ifdef __cplusplus
