@@ -65,7 +65,6 @@ zxerr_t crypto_generateSaplingKeys(uint8_t *output, uint16_t outputLen) {
     MEMZERO(output, outputLen);
 
     // Generate spending key
-    cx_ecfp_private_key_t cx_privateKey = {0};
     uint8_t privateKeyData[SK_LEN_25519] = {0};
     CATCH_CXERROR(os_derive_bip32_with_seed_no_throw(HDW_NORMAL,
                                                      CX_CURVE_Ed25519,
@@ -73,10 +72,9 @@ zxerr_t crypto_generateSaplingKeys(uint8_t *output, uint16_t outputLen) {
                                                      HDPATH_LEN_DEFAULT,
                                                      privateKeyData,
                                                      NULL, NULL, 0));
-    CATCH_CXERROR(cx_ecfp_init_private_key_no_throw(CX_CURVE_Ed25519, privateKeyData, 32, &cx_privateKey));
 
     keys_t saplingKeys = {0};
-    memcpy(saplingKeys.spendingKey, cx_privateKey.d, KEY_LENGTH);
+    memcpy(saplingKeys.spendingKey, privateKeyData, KEY_LENGTH);
     error = computeKeys(&saplingKeys);
 
     // Copy keys
@@ -87,7 +85,6 @@ zxerr_t crypto_generateSaplingKeys(uint8_t *output, uint16_t outputLen) {
     }
 
 catch_cx_error:
-    MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
     MEMZERO(privateKeyData, sizeof(privateKeyData));
     MEMZERO(&saplingKeys, sizeof(saplingKeys));
 
