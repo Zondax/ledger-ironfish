@@ -31,7 +31,7 @@ typedef enum {
     SpendingKeyGenerator,
     ProofGenerationKeyGenerator,
     PublicKeyGenerator,
-    InvalidKey,
+    PointInvalidKey,
 } constant_key_t;
 
 #define KEY_LENGTH 32
@@ -54,10 +54,8 @@ typedef struct {
         ask_t ask;
         ak_t ak;
     };
-    union {
-        nsk_t nsk;
-        nk_t nk;
-    };
+    nsk_t nsk;
+    nk_t nk;
 
     ivk_t ivk;
     ovk_t ovk;

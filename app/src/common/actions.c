@@ -16,4 +16,4 @@
 
 #include "actions.h"
 
-uint16_t action_addrResponseLen;
+uint16_t cmdResponseLen;
