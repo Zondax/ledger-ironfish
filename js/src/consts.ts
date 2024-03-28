@@ -4,11 +4,10 @@ export const P2_VALUES = {
   DEFAULT: 0x00,
 };
 
+export const KEY_TYPES = {
+    PUBLIC_ADRESS: 0x00,
+    VIEW_KEY: 0x01,
+    PROOF_GEN_KEY: 0x02,
+};
+
 export const KEY_LENGTH = 32;
-
-
-export const PKLEN = 65;
-export const ADDRLEN = 32;
-export const PRINCIPAL_LEN = 29;
-export const PREHASH_LEN = 43;
-export const SIGRSLEN = 64;

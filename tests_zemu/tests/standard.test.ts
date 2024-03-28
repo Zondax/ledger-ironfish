@@ -1,5 +1,5 @@
 /** ******************************************************************************
- *  (c) 2018 - 2023 Zondax AG
+ *  (c) 2018 - 2024 Zondax AG
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,16 +15,10 @@
  ******************************************************************************* */
 
 import Zemu, { ButtonKind, zondaxMainmenuNavigation } from '@zondax/zemu'
-import { defaultOptions, models, txBlobExample } from './common'
-import IronfishApp from '@zondax/ledger-ironfish'
+import { PATH, defaultOptions, expectedKeys, models, txBlobExample } from './common'
+import IronfishApp, { IronfishKeys, ResponseAddress, ResponseProofGenKey, ResponseViewKey } from '@zondax/ledger-ironfish'
 
 jest.setTimeout(60000)
-
-const PATH = "m/44'/133'/0'/0/0"
-
-const expectedPublicAddress = "b3ad098e86bc31de35ec5a77cce6aed08d5336bf273abef5e7eb420278a0c19c"
-const expectedIVK = "043e34aa9a6323b82a899d984081ce53e3bb47b2ffa18a0dcfa6910a6d278c73"
-const expectedOVK = "316c96f058f7e188acc90d90d1d765bd9b9ce9e5fa3655c74e8450df0191ee21"
 
 describe('Standard', function () {
   test.concurrent.each(models)('can start and stop container', async function (m) {
@@ -73,15 +67,12 @@ describe('Standard', function () {
       await sim.start({ ...defaultOptions, model: m.name })
       const app = new IronfishApp(sim.getTransport())
 
-      const resp = await app.getAddressAndPubKey(PATH)
+      const resp: ResponseAddress = await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false)
       console.log(resp)
 
       expect(resp.returnCode).toEqual(0x9000)
       expect(resp.errorMessage).toEqual('No errors')
-
-      expect(resp.publicAddress?.toString('hex')).toEqual(expectedPublicAddress)
-      expect(resp.ivk?.toString('hex')).toEqual(expectedIVK)
-      expect(resp.ovk?.toString('hex')).toEqual(expectedOVK)
+      expect(resp.publicAddress?.toString('hex')).toEqual(expectedKeys.publicAddress)
     } finally {
       await sim.close()
     }
@@ -91,16 +82,16 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({...defaultOptions, model: m.name,
-                       approveKeyword: m.name === 'stax' ? 'QR' : '',
+                       approveKeyword: m.name === 'stax' ? 'Path' : '',
                        approveAction: ButtonKind.ApproveTapButton,})
       const app = new IronfishApp(sim.getTransport())
 
-      const respRequest = app.showAddressAndPubKey(PATH)
+      const respRequest = app.retrieveKeys(PATH, IronfishKeys.PublicAddress, true)
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
       await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-show_address`)
 
-      const resp = await respRequest
+      const resp: ResponseAddress = await respRequest
       console.log(resp)
 
       expect(resp.returnCode).toEqual(0x9000)
@@ -111,28 +102,70 @@ describe('Standard', function () {
     }
   })
 
-  // test.concurrent.each(models)('show address - reject', async function (m) {
-  //   const sim = new Zemu(m.path)
-  //   try {
-  //     await sim.start({...defaultOptions, model: m.name,
-  //                      rejectKeyword: m.name === 'stax' ? 'QR' : ''})
-  //     const app = new TemplateApp(sim.getTransport())
+  test.concurrent.each(models)('show address - reject', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({...defaultOptions, model: m.name,
+                       rejectKeyword: m.name === 'stax' ? 'QR' : ''})
+      const app = new IronfishApp(sim.getTransport())
 
-  //     const respRequest = app.getAddressAndPubKey(accountId, true)
-  //     // Wait until we are not in the main menu
-  //     await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+      const respRequest = app.retrieveKeys(PATH, IronfishKeys.PublicAddress, true)
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+      await sim.compareSnapshotsAndReject('.', `${m.prefix.toLowerCase()}-show_address_reject`)
 
-  //     await sim.compareSnapshotsAndReject('.', `${m.prefix.toLowerCase()}-show_address_reject`, 'REJECT')
+      const resp: ResponseAddress = await respRequest
+      console.log(resp)
 
-  //     const resp = await respRequest
-  //     console.log(resp)
+      expect(resp.returnCode).toEqual(0x6986)
+      expect(resp.errorMessage).toEqual('Transaction rejected')
+    } finally {
+      await sim.close()
+    }
+  })
 
-  //     expect(resp.return_code).toEqual(0x6986)
-  //     expect(resp.error_message).toEqual('Transaction rejected')
-  //   } finally {
-  //     await sim.close()
-  //   }
-  // })
+  test.concurrent.each(models)('get proof generation key', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new IronfishApp(sim.getTransport())
+
+      const resp: ResponseProofGenKey = await app.retrieveKeys(PATH, IronfishKeys.ProofGenerationKey, false)
+      console.log(resp)
+
+      expect(resp.returnCode).toEqual(0x9000)
+      expect(resp.errorMessage).toEqual('No errors')
+      expect(resp.ak?.toString('hex')).toEqual(expectedKeys.ak)
+      expect(resp.nsk?.toString('hex')).toEqual(expectedKeys.nsk)
+    } finally {
+      await sim.close()
+    }
+  })
+
+  test.concurrent.each(models)('show view key', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new IronfishApp(sim.getTransport())
+
+      const respRequest = app.retrieveKeys(PATH, IronfishKeys.ViewKey, true)
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-show_viewkey`)
+
+      const resp: ResponseViewKey = await respRequest
+      console.log(resp)
+
+      expect(resp.returnCode).toEqual(0x9000)
+      expect(resp.errorMessage).toEqual('No errors')
+      expect(resp.viewKey?.toString('hex')).toEqual(expectedKeys.viewKey)
+      expect(resp.ivk?.toString('hex')).toEqual(expectedKeys.ivk)
+      expect(resp.ovk?.toString('hex')).toEqual(expectedKeys.ovk)
+
+    } finally {
+      await sim.close()
+    }
+  })
 
   // #{TODO} --> Add Zemu tests for different transactions. Include expert mode if needed
   // test.concurrent.each(models)('sign tx0 normal', async function (m) {

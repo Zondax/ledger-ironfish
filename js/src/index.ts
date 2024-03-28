@@ -14,8 +14,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ******************************************************************************* */
-import { P2_VALUES, PREHASH_LEN, SIGRSLEN } from "./consts";
-import { ResponseAddress, ResponseSign, IronfishIns } from "./types";
+import { ResponseSign, IronfishIns, IronfishKeys, KeyResponse } from "./types";
 
 import GenericApp, {
   ConstructorParams,
@@ -25,7 +24,7 @@ import GenericApp, {
   processErrorResponse,
   Transport,
 } from "@zondax/ledger-js";
-import { processGetAddrResponse } from "./helper";
+import { processGetKeysResponse } from "./helper";
 
 export * from "./types";
 
@@ -35,39 +34,31 @@ export default class IronfishApp extends GenericApp {
     if (transport == null) throw new Error("Transport has not been defined");
 
     const params: ConstructorParams = {
-      cla: 0x80,
+      cla: 0x59,
       ins: {
         GET_VERSION: 0x00,
-        GET_ADDR: 0x01,
+        GET_KEYS: 0x01,
         SIGN: 0x02,
       },
       p1Values: {
         ONLY_RETRIEVE: 0x00,
         SHOW_ADDRESS_IN_DEVICE: 0x01,
       },
-      acceptedPathLengths: [4, 5, 6],
+      acceptedPathLengths: [3],
       chunkSize: 250,
     };
     super(transport, params);
   }
 
-  async getAddressAndPubKey(path: string): Promise<ResponseAddress> {
+  async retrieveKeys(path: string, keyType: IronfishKeys, showInDevice: boolean): Promise<KeyResponse> {
     const serializedPath = this.serializePath(path);
-    return await this.transport
-      .send(this.CLA, this.INS.GET_ADDR, this.P1_VALUES.ONLY_RETRIEVE, P2_VALUES.DEFAULT, serializedPath, [
-        LedgerError.NoErrors,
-      ])
-      .then(processGetAddrResponse, processErrorResponse);
-  }
-
-  async showAddressAndPubKey(path: string): Promise<ResponseAddress> {
-    const serializedPath = this.serializePath(path);
+    const p1 = showInDevice ? this.P1_VALUES.SHOW_ADDRESS_IN_DEVICE : this.P1_VALUES.ONLY_RETRIEVE;
 
     return await this.transport
-      .send(this.CLA, this.INS.GET_ADDR, this.P1_VALUES.SHOW_ADDRESS_IN_DEVICE, P2_VALUES.DEFAULT, serializedPath, [
+      .send(this.CLA, this.INS.GET_KEYS, p1, keyType, serializedPath, [
         LedgerError.NoErrors,
       ])
-      .then(processGetAddrResponse, processErrorResponse);
+      .then((response) => processGetKeysResponse(response, keyType), processErrorResponse);
   }
 
   // #{TODO} --> Create sign methods, this are example ones!
@@ -105,9 +96,9 @@ export default class IronfishApp extends GenericApp {
         }
 
         if (returnCode === LedgerError.NoErrors && response.length > 2) {
-          preSignHash = response.subarray(0, PREHASH_LEN);
-          signatureRS = response.subarray(PREHASH_LEN, PREHASH_LEN + SIGRSLEN);
-          signatureDER = response.subarray(PREHASH_LEN + SIGRSLEN + 1, response.length - 2);
+        //   preSignHash = response.subarray(0, PREHASH_LEN);
+        //   signatureRS = response.subarray(PREHASH_LEN, PREHASH_LEN + SIGRSLEN);
+        //   signatureDER = response.subarray(PREHASH_LEN + SIGRSLEN + 1, response.length - 2);
           return {
             preSignHash,
             signatureRS,

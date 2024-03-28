@@ -24,16 +24,16 @@
 #include "tx.h"
 #include "zxerror.h"
 
-extern uint16_t action_addrResponseLen;
+extern uint16_t cmdResponseLen;
 
-__Z_INLINE zxerr_t app_fill_address() {
+__Z_INLINE zxerr_t app_fill_keys(key_kind_e requestedKey) {
     // Put data directly in the apdu buffer
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
 
-    action_addrResponseLen = 0;
-    const zxerr_t err = crypto_fillAddress(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE, &action_addrResponseLen);
+    cmdResponseLen = 0;
+    const zxerr_t err = crypto_fillKeys(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE, requestedKey, &cmdResponseLen);
 
-    if (err != zxerr_ok || action_addrResponseLen == 0) {
+    if (err != zxerr_ok || cmdResponseLen == 0) {
         THROW(APDU_CODE_EXECUTION_ERROR);
     }
 
@@ -61,9 +61,9 @@ __Z_INLINE void app_reject() {
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }
 
-__Z_INLINE void app_reply_address() {
-    set_code(G_io_apdu_buffer, action_addrResponseLen, APDU_CODE_OK);
-    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, action_addrResponseLen + 2);
+__Z_INLINE void app_reply_cmd() {
+    set_code(G_io_apdu_buffer, cmdResponseLen, APDU_CODE_OK);
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, cmdResponseLen + 2);
 }
 
 __Z_INLINE void app_reply_error() {

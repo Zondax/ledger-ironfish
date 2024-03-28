@@ -61,7 +61,7 @@ parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t m
 }
 
 parser_error_t generate_key(const uint8_t expandedKey[KEY_LENGTH], constant_key_t keyType, uint8_t output[KEY_LENGTH]) {
-    if (keyType >= InvalidKey) {
+    if (keyType >= PointInvalidKey) {
         return parser_value_out_of_range;
     }
     uint8_t tmpExpandedKey[KEY_LENGTH] = {0};

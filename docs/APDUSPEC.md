@@ -2,8 +2,6 @@
 
 ## General structure
 
-# #{TODO} --> Update CLA, HDPATH and APDU messages
-
 The general structure of commands and responses is as follows:
 
 ### Commands
@@ -71,7 +69,7 @@ The general structure of commands and responses is as follows:
 
 ---
 
-### INS_GET_ADDR
+### INS_GET_KEYS
 
 #### Command
 
@@ -80,23 +78,39 @@ The general structure of commands and responses is as follows:
 | CLA     | byte (1) | Application Identifier    | 0x59       |
 | INS     | byte (1) | Instruction ID            | 0x01       |
 | P1      | byte (1) | Request User confirmation | No = 0     |
-| P2      | byte (1) | Parameter 2               | ignored    |
-| L       | byte (1) | Bytes in payload          | (depends)  |
+| P2      | byte (1) | KeyType                   | 0 ~ 2      |
+| L       | byte (1) | Bytes in payload          | 12         |
 | Path[0] | byte (4) | Derivation Path Data      | 0x80000000 \| 44 |
-| Path[1] | byte (4) | Derivation Path Data      | 0x80000000 \| 133 |
+| Path[1] | byte (4) | Derivation Path Data      | 0x80000000 \| 1338 |
 | Path[2] | byte (4) | Derivation Path Data      | ?          |
-| Path[3] | byte (4) | Derivation Path Data      | ?          |
-| Path[4] | byte (4) | Derivation Path Data      | ?          |
+
 
 #### Response
+If the input parameters are wrong or some error happens during the computation of this command, the app will return only the error code.
+
+**|---> For KeyType = 0 (PublicAddress)**
 
 | Field   | Type      | Content             | Note                     |
 | ------- | --------- | ---------------     | ------------------------ |
 | Address | byte (32) | Public address      |                          |
-| IVK     | byte (32) | IncomingViewingKey  |                          |
-| OVK     | byte (32) | OutgoingViewingKey  |                          |
 | SW1-SW2 | byte (2)  | Return code         | see list of return codes |
+---
 
+**|---> For KeyType = 1 (ViewKey)**
+
+| Field   | Type      | Content             | Note                     |
+| ------- | --------- | ---------------     | ------------------------ |
+| ViewKey | byte (64) | ViewKey             | {ak, nk}                 |
+| IVK     | byte (32) | IncomingViewingKey  | {ivk}                    |
+| OVK     | byte (32) | OutgoingViewingKey  | {ovk}                    |
+| SW1-SW2 | byte (2)  | Return code         | see list of return codes |
+---
+**|---> For KeyType = 2 (ProofGenerationKey)**
+
+| Field               | Type      | Content             | Note                     |
+| ----------------    | --------- | ---------------     | ------------------------ |
+| ProofGeneration key | byte (64) | ProofGenerationKey  | {ak, nsk}                |
+| SW1-SW2             | byte (2)  | Return code         | see list of return codes |
 ---
 
 ### INS_SIGN

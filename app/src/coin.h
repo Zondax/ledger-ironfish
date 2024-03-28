@@ -20,15 +20,14 @@ extern "C" {
 #endif
 
 // #{TODO} ---> Replace CLA, Token symbol, HDPATH, etc etc
-#define CLA 0x80
+#define CLA 0x59
 
-#define HDPATH_LEN_DEFAULT 5
+// This instruction will work for requesting any of the sapling keys
+#define INS_GET_KEYS 0x01
+
+#define HDPATH_LEN_DEFAULT 3
 #define HDPATH_0_DEFAULT (0x80000000u | 0x2c)   // 44
-#define HDPATH_1_DEFAULT (0x80000000u | 0x85)  // 133
-
-#define HDPATH_2_DEFAULT (0x80000000u | 0u)
-#define HDPATH_3_DEFAULT (0u)
-#define HDPATH_4_DEFAULT (0u)
+#define HDPATH_1_DEFAULT (0x80000000u | 0x53a)  // 1338
 
 #define SECP256K1_PK_LEN 65u
 
@@ -40,12 +39,18 @@ extern "C" {
 
 #define PK_LEN_25519 32u
 
+typedef enum {
+    PublicAddress = 0,
+    ViewKeys = 1,
+    ProofGenerationKey = 2,
+    InvalidKey,
+} key_kind_e;
+
 #define COIN_AMOUNT_DECIMAL_PLACES 6
 #define COIN_TICKER "IRON "
 
 #define MENU_MAIN_APP_LINE1 "Ironfish"
 #define MENU_MAIN_APP_LINE2 "Ready"
-#define MENU_MAIN_APP_LINE2_SECRET "???"
 #define APPVERSION_LINE1 "Ironfish"
 #define APPVERSION_LINE2 "v" APPVERSION
 

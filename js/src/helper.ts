@@ -1,25 +1,60 @@
 import { errorCodeToString } from "@zondax/ledger-js";
-import { ADDRLEN, KEY_LENGTH, PRINCIPAL_LEN } from "./consts";
-import { ResponseAddress } from "./types";
+import { KEY_LENGTH } from "./consts";
+import { IronfishKeys, KeyResponse } from "./types";
 
-export function processGetAddrResponse(response: Buffer): ResponseAddress {
-  const errorCodeData = response.subarray(-2);
-  const returnCode = errorCodeData[0] * 256 + errorCodeData[1];
+export function processGetKeysResponse(response: Buffer, keyType: IronfishKeys): KeyResponse {
+    const errorCodeData = response.subarray(-2);
+    const returnCode = errorCodeData[0] * 256 + errorCodeData[1];
 
-  const publicAddress = Buffer.from(response.subarray(0, KEY_LENGTH));
-  response = response.subarray(KEY_LENGTH);
+    let requestedKey: KeyResponse = {
+        returnCode: returnCode,
+        errorMessage: errorCodeToString(returnCode),
+    }
 
-  const ivk = Buffer.from(response.subarray(0, KEY_LENGTH));
-  response = response.subarray(KEY_LENGTH);
+    switch(keyType) {
+        case IronfishKeys.PublicAddress: {
+            const publicAddress = Buffer.from(response.subarray(0, KEY_LENGTH));
+            requestedKey = {
+                ...requestedKey,
+                publicAddress,
+            };
+            break;
+        }
 
-  const ovk = Buffer.from(response.subarray(0, KEY_LENGTH));
-  response = response.subarray(KEY_LENGTH);
+        case IronfishKeys.ViewKey: {
+            const viewKey = Buffer.from(response.subarray(0, 2 * KEY_LENGTH));
+            response = response.subarray(2 * KEY_LENGTH);
 
-  return {
-    publicAddress,
-    ivk,
-    ovk,
-    returnCode,
-    errorMessage: errorCodeToString(returnCode),
-  };
-}
+            const ivk = Buffer.from(response.subarray(0, KEY_LENGTH));
+            response = response.subarray(KEY_LENGTH);
+
+            const ovk = Buffer.from(response.subarray(0, KEY_LENGTH));
+            response = response.subarray(KEY_LENGTH);
+
+            requestedKey = {
+                ...requestedKey,
+                viewKey,
+                ivk,
+                ovk,
+            };
+            break;
+        }
+
+        case IronfishKeys.ProofGenerationKey: {
+            const ak = Buffer.from(response.subarray(0, KEY_LENGTH));
+            response = response.subarray(KEY_LENGTH);
+
+            const nsk = Buffer.from(response.subarray(0, KEY_LENGTH));
+            response = response.subarray(KEY_LENGTH);
+
+            requestedKey = {
+                ...requestedKey,
+                ak,
+                nsk,
+            };
+            break;
+        }
+    }
+
+    return requestedKey;
+  }

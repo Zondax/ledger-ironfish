@@ -21,7 +21,7 @@
 #include <ux.h>
 
 #include "actions.h"
-#include "addr.h"
+#include "review_keys.h"
 #include "app_main.h"
 #include "coin.h"
 #include "crypto.h"
@@ -35,15 +35,13 @@ static bool tx_initialized = false;
 void extractHDPath(uint32_t rx, uint32_t offset) {
     tx_initialized = false;
 
-    if ((rx - offset) < sizeof(uint32_t) * HDPATH_LEN_DEFAULT) {
+    if ((rx - offset) != sizeof(uint32_t) * HDPATH_LEN_DEFAULT) {
         THROW(APDU_CODE_WRONG_LENGTH);
     }
 
     memcpy(hdPath, G_io_apdu_buffer + offset, sizeof(uint32_t) * HDPATH_LEN_DEFAULT);
 
-    // #{TODO} --> testnet necessary?
     const bool mainnet = hdPath[0] == HDPATH_0_DEFAULT && hdPath[1] == HDPATH_1_DEFAULT;
-
     if (!mainnet) {
         THROW(APDU_CODE_DATA_INVALID);
     }
@@ -90,22 +88,32 @@ __Z_INLINE bool process_chunk(__Z_UNUSED volatile uint32_t *tx, uint32_t rx) {
     THROW(APDU_CODE_INVALIDP1P2);
 }
 
-__Z_INLINE void handleGetAddr(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+__Z_INLINE void handleGetKeys(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     extractHDPath(rx, OFFSET_DATA);
+    if (G_io_apdu_buffer[OFFSET_P2] >= InvalidKey) {
+        THROW(APDU_CODE_INVALIDP1P2);
+    }
 
     const uint8_t requireConfirmation = G_io_apdu_buffer[OFFSET_P1];
-    zxerr_t zxerr = app_fill_address();
+    const key_kind_e requestedKeys = (key_kind_e) G_io_apdu_buffer[OFFSET_P2];
+
+    // ViewKey will require explicit user confirmation to leave the device
+    if (!requireConfirmation && requestedKeys == ViewKeys) {
+        THROW(APDU_CODE_INVALIDP1P2);
+    }
+
+    zxerr_t zxerr = app_fill_keys(requestedKeys);
     if (zxerr != zxerr_ok) {
         *tx = 0;
         THROW(APDU_CODE_DATA_INVALID);
     }
+
     if (requireConfirmation) {
-        view_review_init(addr_getItem, addr_getNumItems, app_reply_address);
-        view_review_show(REVIEW_ADDRESS);
+        review_keys_menu(requestedKeys);
         *flags |= IO_ASYNCH_REPLY;
         return;
     }
-    *tx = action_addrResponseLen;
+    *tx = cmdResponseLen;
     THROW(APDU_CODE_OK);
 }
 
@@ -179,9 +187,9 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     break;
                 }
 
-                case INS_GET_ADDR: {
+                case INS_GET_KEYS: {
                     CHECK_PIN_VALIDATED()
-                    handleGetAddr(flags, tx, rx);
+                    handleGetKeys(flags, tx, rx);
                     break;
                 }
 
@@ -190,6 +198,8 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     handleSign(flags, tx, rx);
                     break;
                 }
+
+
 
 #if defined(APP_TESTING)
                 case INS_TEST: {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   (c) 2018 - 2023 Zondax AG
+ *   (c) 2018 - 2024 Zondax AG
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,17 +15,13 @@
  ********************************************************************************/
 
 #pragma once
+#include "coin.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Return the number of items in the address view
-zxerr_t addr_getNumItems(uint8_t *num_items);
-
-// Gets an specific item from the address view (including paging)
-zxerr_t addr_getItem(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outValue, uint16_t outValueLen,
-                     uint8_t pageIdx, uint8_t *pageCount);
+void review_keys_menu(key_kind_e keyType);
 
 #ifdef __cplusplus
 }
