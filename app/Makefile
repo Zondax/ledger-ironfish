@@ -41,7 +41,7 @@ $(info COIN  = [$(COIN)])
 ifeq ($(COIN),IRON)
 # Main app configuration
 APPNAME = "Ironfish"
-APPPATH = "44'/133'"
+APPPATH = "44'/1338'"
 
 else
 define error_message
