@@ -39,8 +39,8 @@ export const expectedKeys: ExpectedValues = {
     ak: "ce113136c9b93cefbe3358e6b5a9e96867bd6cf3d399e4f7ccdb3467ebbfbf0d",
     nsk: "0616ee2a9138c8276bebea530e6650b2d4e99f9e2cbdfad3123771b4e115c871",
     viewKey: "ce113136c9b93cefbe3358e6b5a9e96867bd6cf3d399e4f7ccdb3467ebbfbf0df0e8ca3ac4e83c26c4cc845d5fbf808f2ef9130b00c4ca275735f66c4c5f675a",
-    ivk: "80215c397c1b80ed3cebc4045ffe788a02d03b284b332a26b2b3c126881d87a7",
-    ovk: "01756f2c3b5f3deb4639e0de7e26ab72e63b36d8be536a2373fedf9205a50ab0"
+    ivk: "01756f2c3b5f3deb4639e0de7e26ab72e63b36d8be536a2373fedf9205a50ab0",
+    ovk: "80215c397c1b80ed3cebc4045ffe788a02d03b284b332a26b2b3c126881d87a7",
 }
 
 export const txBlobExample =

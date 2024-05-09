@@ -75,8 +75,8 @@ __Z_INLINE zxerr_t copyKeys(keys_t *saplingKeys, key_kind_e requestedKeys, uint8
             }
             memcpy(output, saplingKeys->ak, KEY_LENGTH);
             memcpy(output + KEY_LENGTH, saplingKeys->nk, KEY_LENGTH);
-            memcpy(output + 2 * KEY_LENGTH, saplingKeys->ovk, KEY_LENGTH);
-            memcpy(output + 3 * KEY_LENGTH, saplingKeys->ivk, KEY_LENGTH);
+            memcpy(output + 2 * KEY_LENGTH, saplingKeys->ivk, KEY_LENGTH);
+            memcpy(output + 3 * KEY_LENGTH, saplingKeys->ovk, KEY_LENGTH);
             break;
 
         case ProofGenerationKey:
