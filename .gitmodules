@@ -1,8 +1,8 @@
 [submodule "deps/ledger-zxlib"]
 	path = deps/ledger-zxlib
 	url = https://github.com/zondax/ledger-zxlib
-[submodule "deps/stax-secure-sdk"]
-	path = deps/stax-secure-sdk
+[submodule "deps/ledger-secure-sdk"]
+	path = deps/ledger-secure-sdk
 	url = https://github.com/LedgerHQ/ledger-secure-sdk
 [submodule "deps/blake2"]
 	path = deps/blake2
