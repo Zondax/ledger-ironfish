@@ -26,14 +26,6 @@
 #endif
     #include "blake2.h"
 
-static void swap_endian(uint8_t *data, int8_t len) {
-    for (int8_t i = 0; i < len / 2; i++) {
-        uint8_t t = data[len - i - 1];
-        data[len - i - 1] = data[i];
-        data[i] = t;
-    }
-}
-
 parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t modifier, uint8_t outputKey[KEY_LENGTH], bool reduceWideByte) {
     uint8_t output[64] = {0};
 #if defined (LEDGER_SPECIFIC)
@@ -52,7 +44,6 @@ parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t m
 
     if (reduceWideByte) {
         from_bytes_wide(output, outputKey);
-        swap_endian(outputKey, KEY_LENGTH);
     } else {
         memcpy(outputKey, output, KEY_LENGTH);
     }
@@ -64,10 +55,7 @@ parser_error_t generate_key(const uint8_t expandedKey[KEY_LENGTH], constant_key_
     if (keyType >= PointInvalidKey) {
         return parser_value_out_of_range;
     }
-    uint8_t tmpExpandedKey[KEY_LENGTH] = {0};
-    memcpy(tmpExpandedKey, expandedKey, KEY_LENGTH);
-    swap_endian(tmpExpandedKey, KEY_LENGTH);
-    scalar_multiplication(tmpExpandedKey, keyType, output);
+    scalar_multiplication(expandedKey, keyType, output);
     return parser_ok;
 }
 
@@ -79,7 +67,6 @@ parser_error_t computeIVK(const ak_t ak, const nk_t nk, ivk_t ivk) {
     blake2s_final(&state, ivk, KEY_LENGTH);
 
     ivk[31] &= 0x07;
-    swap_endian(ivk, KEY_LENGTH);
     // if ivk == [0; 32] {
     //     return Err(IronfishError::new(IronfishErrorKind::InvalidViewingKey));
     // }

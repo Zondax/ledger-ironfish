@@ -27,6 +27,8 @@ include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.installer_script
 include $(BOLOS_SDK)/Makefile.defines
 
 $(info ************ TARGET_NAME  = [$(TARGET_NAME)])
+$(info ************ PRODUCTION_BUILD  = [$(if $(filter 1,$(PRODUCTION_BUILD)),PRODUCTION BUILD,INTERNAL USE)])
+DEFINES += PRODUCTION_BUILD=$(PRODUCTION_BUILD)
 
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.app_testing
 
@@ -52,7 +54,7 @@ endef
 $(error "$(error_message)")
 endif
 
-APP_LOAD_PARAMS =  --curve ed25519 --delete $(COMMON_LOAD_PARAMS) --path $(APPPATH)
+APP_LOAD_PARAMS = --curve ed25519 --delete $(COMMON_LOAD_PARAMS) --path $(APPPATH)
 
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.devices
 

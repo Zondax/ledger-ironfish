@@ -9,7 +9,8 @@ Checks: "-*,
   portability-*,
   readability-*,
   -misc-no-recursion,
-  -readability-function-cognitive-complexity"
+  -readability-function-cognitive-complexity
+  -readability-magic-numbers"
 WarningsAsErrors: "*"
 CheckOptions:
   - key: readability-identifier-length.MinimumVariableNameLength

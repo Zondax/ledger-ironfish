@@ -50,13 +50,10 @@ typedef uint8_t public_address_t[KEY_LENGTH];
 
 typedef struct {
     spending_key_t spendingKey;
-    union {
-        ask_t ask;
-        ak_t ak;
-    };
+    ask_t ask;
+    ak_t ak;
     nsk_t nsk;
     nk_t nk;
-
     ivk_t ivk;
     ovk_t ovk;
     public_address_t address;
