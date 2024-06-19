@@ -115,7 +115,8 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
             return parser_ok;
         case 4: {
             snprintf(outKey, outKeyLen, "TxnHash");
-            pageStringHex(outVal, outValLen, ctx->tx_obj->transactionHash, sizeof(ctx->tx_obj->transactionHash), pageIdx, pageCount);
+            pageStringHex(outVal, outValLen, ctx->tx_obj->transactionHash, sizeof(ctx->tx_obj->transactionHash), pageIdx,
+                          pageCount);
             return parser_ok;
         }
         default:

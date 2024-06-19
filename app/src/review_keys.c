@@ -14,20 +14,20 @@
  *  limitations under the License.
  ********************************************************************************/
 
+#include "review_keys.h"
+
 #include <stdio.h>
 
+#include "actions.h"
 #include "app_mode.h"
 #include "coin.h"
 #include "crypto.h"
+#include "keys_def.h"
+#include "os.h"
+#include "view.h"
 #include "zxerror.h"
 #include "zxformat.h"
 #include "zxmacros.h"
-#include "keys_def.h"
-#include "os.h"
-
-#include "view.h"
-#include "actions.h"
-#include "review_keys.h"
 
 zxerr_t getNumItemsPublicAddress(uint8_t *num_items) {
     if (num_items == NULL) {
@@ -38,14 +38,14 @@ zxerr_t getNumItemsPublicAddress(uint8_t *num_items) {
     return zxerr_ok;
 }
 
-zxerr_t getItemPublicAddress(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen, uint8_t pageIdx,
-                     uint8_t *pageCount) {
+zxerr_t getItemPublicAddress(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
+                             uint8_t pageIdx, uint8_t *pageCount) {
     ZEMU_LOGF(50, "[addr_getItem] %d/%d\n", displayIdx, pageIdx)
 
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "Address");
-            const char* address = (const char*)G_io_apdu_buffer;
+            const char *address = (const char *)G_io_apdu_buffer;
             pageStringHex(outVal, outValLen, address, KEY_LENGTH, pageIdx, pageCount);
             break;
         case 1: {
@@ -72,19 +72,19 @@ zxerr_t getNumItemsProofGenerationKey(uint8_t *num_items) {
     return zxerr_ok;
 }
 
-zxerr_t getItemProofGenerationKey(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen, uint8_t pageIdx,
-                     uint8_t *pageCount) {
+zxerr_t getItemProofGenerationKey(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
+                                  uint8_t pageIdx, uint8_t *pageCount) {
     ZEMU_LOGF(50, "[addr_getItem] %d/%d\n", displayIdx, pageIdx)
 
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "AuthKey");
-            const char* ak = (const char*)G_io_apdu_buffer;
+            const char *ak = (const char *)G_io_apdu_buffer;
             pageStringHex(outVal, outValLen, ak, KEY_LENGTH, pageIdx, pageCount);
             break;
         case 1:
             snprintf(outKey, outKeyLen, "ProofAuthKey");
-            const char* nsk = (const char*)G_io_apdu_buffer + KEY_LENGTH;
+            const char *nsk = (const char *)G_io_apdu_buffer + KEY_LENGTH;
             pageStringHex(outVal, outValLen, nsk, KEY_LENGTH, pageIdx, pageCount);
             break;
         case 2: {
@@ -111,24 +111,24 @@ zxerr_t getNumItemsViewKey(uint8_t *num_items) {
     return zxerr_ok;
 }
 
-zxerr_t getItemViewKey(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen, uint8_t pageIdx,
-                     uint8_t *pageCount) {
+zxerr_t getItemViewKey(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
+                       uint8_t pageIdx, uint8_t *pageCount) {
     ZEMU_LOGF(50, "[addr_getItem] %d/%d\n", displayIdx, pageIdx)
 
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "ViewKey");
-            const char* viewKey = (const char*)G_io_apdu_buffer;
+            const char *viewKey = (const char *)G_io_apdu_buffer;
             pageStringHex(outVal, outValLen, viewKey, 2 * KEY_LENGTH, pageIdx, pageCount);
             break;
         case 1:
             snprintf(outKey, outKeyLen, "IVK");
-            const char* ivk = (const char*)G_io_apdu_buffer + 2 * KEY_LENGTH;
+            const char *ivk = (const char *)G_io_apdu_buffer + 2 * KEY_LENGTH;
             pageStringHex(outVal, outValLen, ivk, KEY_LENGTH, pageIdx, pageCount);
             break;
         case 2:
             snprintf(outKey, outKeyLen, "OVK");
-            const char* ovk = (const char*)G_io_apdu_buffer + 3 * KEY_LENGTH;
+            const char *ovk = (const char *)G_io_apdu_buffer + 3 * KEY_LENGTH;
             pageStringHex(outVal, outValLen, ovk, KEY_LENGTH, pageIdx, pageCount);
             break;
 

@@ -21,10 +21,10 @@
 #include <ux.h>
 
 #include "actions.h"
-#include "review_keys.h"
 #include "app_main.h"
 #include "coin.h"
 #include "crypto.h"
+#include "review_keys.h"
 #include "tx.h"
 #include "view.h"
 #include "view_internal.h"
@@ -95,7 +95,7 @@ __Z_INLINE void handleGetKeys(volatile uint32_t *flags, volatile uint32_t *tx, u
     }
 
     const uint8_t requireConfirmation = G_io_apdu_buffer[OFFSET_P1];
-    const key_kind_e requestedKeys = (key_kind_e) G_io_apdu_buffer[OFFSET_P2];
+    const key_kind_e requestedKeys = (key_kind_e)G_io_apdu_buffer[OFFSET_P2];
 
     // ViewKey will require explicit user confirmation to leave the device
     if (!requireConfirmation && requestedKeys == ViewKeys) {
@@ -165,7 +165,9 @@ __Z_INLINE void handle_getversion(__Z_UNUSED volatile uint32_t *flags, volatile 
 }
 
 #if defined(APP_TESTING)
-void handleTest(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) { THROW(APDU_CODE_OK); }
+void handleTest(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    THROW(APDU_CODE_OK);
+}
 #endif
 
 void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
@@ -199,8 +201,6 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     break;
                 }
 
-
-
 #if defined(APP_TESTING)
                 case INS_TEST: {
                     handleTest(flags, tx, rx);
@@ -212,7 +212,9 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     THROW(APDU_CODE_INS_NOT_SUPPORTED);
             }
         }
-        CATCH(EXCEPTION_IO_RESET) { THROW(EXCEPTION_IO_RESET); }
+        CATCH(EXCEPTION_IO_RESET) {
+            THROW(EXCEPTION_IO_RESET);
+        }
         CATCH_OTHER(e) {
             switch (e & 0xF000) {
                 case 0x6000:
@@ -227,7 +229,8 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
             G_io_apdu_buffer[*tx + 1] = sw & 0xFF;
             *tx += 2;
         }
-        FINALLY {}
+        FINALLY {
+        }
     }
     END_TRY;
 }

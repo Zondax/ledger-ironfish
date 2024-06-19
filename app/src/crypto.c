@@ -17,24 +17,24 @@
 #include "crypto.h"
 
 #include "coin.h"
+#include "crypto_helper.h"
 #include "cx.h"
 #include "cx_blake2b.h"
-#include "zxmacros.h"
 #include "keys_def.h"
-#include "crypto_helper.h"
 #include "zxformat.h"
+#include "zxmacros.h"
 
 uint32_t hdPath[HDPATH_LEN_DEFAULT];
 
-#define CHECK_PARSER_OK(CALL)      \
-  do {                         \
-    cx_err_t __cx_err = CALL;  \
-    if (__cx_err != parser_ok) {   \
-      return zxerr_unknown;    \
-    }                          \
-  } while (0)
+#define CHECK_PARSER_OK(CALL)        \
+    do {                             \
+        cx_err_t __cx_err = CALL;    \
+        if (__cx_err != parser_ok) { \
+            return zxerr_unknown;    \
+        }                            \
+    } while (0)
 
-static zxerr_t computeKeys(keys_t * saplingKeys) {
+static zxerr_t computeKeys(keys_t *saplingKeys) {
     if (saplingKeys == NULL) {
         return zxerr_no_data;
     }
@@ -105,12 +105,8 @@ zxerr_t crypto_generateSaplingKeys(uint8_t *output, uint16_t outputLen, key_kind
 
     // Generate spending key
     uint8_t privateKeyData[SK_LEN_25519] = {0};
-    CATCH_CXERROR(os_derive_bip32_with_seed_no_throw(HDW_NORMAL,
-                                                     CX_CURVE_Ed25519,
-                                                     hdPath,
-                                                     HDPATH_LEN_DEFAULT,
-                                                     privateKeyData,
-                                                     NULL, NULL, 0));
+    CATCH_CXERROR(os_derive_bip32_with_seed_no_throw(HDW_NORMAL, CX_CURVE_Ed25519, hdPath, HDPATH_LEN_DEFAULT,
+                                                     privateKeyData, NULL, NULL, 0));
 
     keys_t saplingKeys = {0};
     memcpy(saplingKeys.spendingKey, privateKeyData, KEY_LENGTH);
@@ -128,8 +124,8 @@ catch_cx_error:
     return error;
 }
 
-
-zxerr_t crypto_sign(const uint16_t signatures, const uint8_t publickeyRandomness[32], const uint8_t txnHash[32], uint8_t *output, uint16_t outputLen) {
+zxerr_t crypto_sign(const uint16_t signatures, const uint8_t publickeyRandomness[32], const uint8_t txnHash[32],
+                    uint8_t *output, uint16_t outputLen) {
     if (output == NULL || outputLen < (signatures * REDJUBJUB_SIGNATURE_LEN)) {
         return zxerr_no_data;
     }
@@ -138,12 +134,8 @@ zxerr_t crypto_sign(const uint16_t signatures, const uint8_t publickeyRandomness
 
     // Generate spending key
     uint8_t privateKeyData[SK_LEN_25519] = {0};
-    CATCH_CXERROR(os_derive_bip32_with_seed_no_throw(HDW_NORMAL,
-                                                     CX_CURVE_Ed25519,
-                                                     hdPath,
-                                                     HDPATH_LEN_DEFAULT,
-                                                     privateKeyData,
-                                                     NULL, NULL, 0));
+    CATCH_CXERROR(os_derive_bip32_with_seed_no_throw(HDW_NORMAL, CX_CURVE_Ed25519, hdPath, HDPATH_LEN_DEFAULT,
+                                                     privateKeyData, NULL, NULL, 0));
 
     keys_t saplingKeys = {0};
     memcpy(saplingKeys.spendingKey, privateKeyData, KEY_LENGTH);

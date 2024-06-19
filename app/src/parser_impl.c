@@ -15,12 +15,12 @@
  ********************************************************************************/
 
 #include "parser_impl.h"
-#include "parser_impl_common.h"
-#include "coin.h"
 
+#include "coin.h"
 #include "crypto_helper.h"
-#include "zxmacros.h"
+#include "parser_impl_common.h"
 #include "zxformat.h"
+#include "zxmacros.h"
 
 static parser_error_t readTransactionVersion(parser_context_t *ctx, transaction_version_e *txVersion) {
     if (ctx == NULL || txVersion == NULL) {
@@ -33,7 +33,7 @@ static parser_error_t readTransactionVersion(parser_context_t *ctx, transaction_
     if (tmpVersion != V1 && tmpVersion != V2) {
         return parser_value_out_of_range;
     }
-    *txVersion = (transaction_version_e) tmpVersion;
+    *txVersion = (transaction_version_e)tmpVersion;
     return parser_ok;
 }
 
@@ -46,7 +46,7 @@ static parser_error_t readSpends(parser_context_t *ctx, vec_spend_description_t 
     spends->data.ptr = ctx->buffer + ctx->offset;
     spends->data.len = 0;
     uint8_t *tmpPtr = NULL;
-    for(uint64_t i = 0; i < spends->elements; i++) {
+    for (uint64_t i = 0; i < spends->elements; i++) {
         CHECK_ERROR(readBytes(ctx, &tmpPtr, SPENDLEN));
         spends->data.len += SPENDLEN;
     }
@@ -61,7 +61,7 @@ static parser_error_t readOutputs(parser_context_t *ctx, vec_output_description_
     outputs->data.ptr = ctx->buffer + ctx->offset;
     outputs->data.len = 0;
     uint8_t *tmpPtr = NULL;
-    for(uint64_t i = 0; i < outputs->elements; i++) {
+    for (uint64_t i = 0; i < outputs->elements; i++) {
         CHECK_ERROR(readBytes(ctx, &tmpPtr, OUTPUTLEN));
         outputs->data.len += OUTPUTLEN;
     }
@@ -78,7 +78,7 @@ static parser_error_t readMints(parser_context_t *ctx, vec_mint_description_t *m
     mints->data.ptr = ctx->buffer + ctx->offset;
     mints->data.len = 0;
     uint8_t *tmpPtr = NULL;
-    for(uint64_t i = 0; i < mints->elements; i++) {
+    for (uint64_t i = 0; i < mints->elements; i++) {
         CTX_CHECK_AVAIL(ctx, (MINTLEN + 1));
         const uint8_t transferOwnershipToLen = mints->data.ptr[MINTLEN] == 1 ? 33 : 1;
         CHECK_ERROR(readBytes(ctx, &tmpPtr, MINTLEN + transferOwnershipToLen + REDJUBJUB_SIGNATURE_LEN));
@@ -96,7 +96,7 @@ static parser_error_t readBurns(parser_context_t *ctx, vec_burn_description_t *b
     burns->data.ptr = ctx->buffer + ctx->offset;
     burns->data.len = 0;
     uint8_t *tmpPtr = NULL;
-    for(uint64_t i = 0; i < burns->elements; i++) {
+    for (uint64_t i = 0; i < burns->elements; i++) {
         CHECK_ERROR(readBytes(ctx, &tmpPtr, BURNLEN));
         burns->data.len += BURNLEN;
     }
@@ -118,11 +118,11 @@ parser_error_t _read(parser_context_t *ctx, parser_tx_t *v) {
     v->publicKeyRandomness.len = KEY_LENGTH;
     CHECK_ERROR(readBytes(ctx, &v->publicKeyRandomness.ptr, v->publicKeyRandomness.len));
 
-    //Read Spends and Outputs
+    // Read Spends and Outputs
     CHECK_ERROR(readSpends(ctx, &v->spends));
     CHECK_ERROR(readOutputs(ctx, &v->outputs));
 
-    //Read Mints and Burns
+    // Read Mints and Burns
     CHECK_ERROR(readMints(ctx, &v->mints));
     CHECK_ERROR(readBurns(ctx, &v->burns));
 

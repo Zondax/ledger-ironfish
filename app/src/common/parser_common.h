@@ -24,23 +24,23 @@ extern "C" {
 
 #include "parser_txdef.h"
 
-#define CHECK_ERROR(__CALL)         \
-  do {                              \
-    parser_error_t __err = __CALL;  \
-    CHECK_APP_CANARY()              \
-    if (__err != parser_ok) {       \
-      return __err;                 \
-    }                               \
-  } while (0)
+#define CHECK_ERROR(__CALL)            \
+    do {                               \
+        parser_error_t __err = __CALL; \
+        CHECK_APP_CANARY()             \
+        if (__err != parser_ok) {      \
+            return __err;              \
+        }                              \
+    } while (0)
 
-#define CHECK_PARSER_OK(__CALL)     \
-  do {                              \
-    parser_error_t __err = __CALL;  \
-    CHECK_APP_CANARY()              \
-    if (__err != parser_ok) {       \
-      return zxerr_unknown;         \
-    }                               \
-  } while (0)
+#define CHECK_PARSER_OK(__CALL)        \
+    do {                               \
+        parser_error_t __err = __CALL; \
+        CHECK_APP_CANARY()             \
+        if (__err != parser_ok) {      \
+            return zxerr_unknown;      \
+        }                              \
+    } while (0)
 
 typedef enum {
     // Generic errors

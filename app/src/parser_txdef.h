@@ -25,7 +25,7 @@ extern "C" {
 // Move bytes_t definition to a different place?
 #include "keys_def.h"
 
-#define NAME_LENGTH 32
+#define NAME_LENGTH     32
 #define METADATA_LENGTH 96
 
 typedef enum {
@@ -40,18 +40,18 @@ typedef struct {
 } redjubjub_signature_t;
 
 typedef struct {
-    bytes_t publicKeyRandomness;  // size = 32
-    bytes_t proof;  // size = 384
-    bytes_t valueCommitment;  // size = 160
-    bytes_t rootHash;  // size = 32
-    uint32_t treeSize;  // size = 4
-    bytes_t nullifier;  // size = 32
-    redjubjub_signature_t signature;    // size = 64
-} spend_description_t;  //676
+    bytes_t publicKeyRandomness;      // size = 32
+    bytes_t proof;                    // size = 384
+    bytes_t valueCommitment;          // size = 160
+    bytes_t rootHash;                 // size = 32
+    uint32_t treeSize;                // size = 4
+    bytes_t nullifier;                // size = 32
+    redjubjub_signature_t signature;  // size = 64
+} spend_description_t;                // 676
 
 typedef struct {
-    uint8_t assetId[32];    // size = 32
-    uint64_t value;         // size = 8
+    uint8_t assetId[32];  // size = 32
+    uint64_t value;       // size = 8
 } burn_description_t;
 typedef struct {
     bytes_t proof;
@@ -68,15 +68,14 @@ typedef struct {
 } asset_t;
 
 typedef struct {
-    bytes_t publicKeyRandomness;  // size = 32
-    bytes_t proof;  // size = 384 / 2
-    asset_t asset;  // size = 32 + 96 + 32 + 1 + 32 = 193
-    uint64_t value; // size = 8
-    bytes_t owner;  // size = 32
-    OptBytes_t transferOwnershipTo; //size = 1 | 33
-    redjubjub_signature_t signature;    // size = 64
+    bytes_t publicKeyRandomness;      // size = 32
+    bytes_t proof;                    // size = 384 / 2
+    asset_t asset;                    // size = 32 + 96 + 32 + 1 + 32 = 193
+    uint64_t value;                   // size = 8
+    bytes_t owner;                    // size = 32
+    OptBytes_t transferOwnershipTo;   // size = 1 | 33
+    redjubjub_signature_t signature;  // size = 64
 } mint_description_t;
-
 
 typedef struct {
     uint64_t elements;
@@ -122,7 +121,7 @@ typedef struct {
     /// well as signing of the SpendDescriptions. Referred to as
     /// `rk` in the literature Calculated from the authorizing key and
     /// the public_key_randomness.
-    bytes_t randomizedPublicKey; //redjubjub::PublicKey,
+    bytes_t randomizedPublicKey;  // redjubjub::PublicKey,
     bytes_t publicKeyRandomness;
 
     bytes_t bindingSignature;
@@ -130,7 +129,6 @@ typedef struct {
     // Not part of the incoming txn but it's used to compute signatures
     uint8_t transactionHash[32];
 } parser_tx_t;
-
 
 #ifdef __cplusplus
 }

@@ -1,31 +1,33 @@
 /*******************************************************************************
-*  (c) 2018 - 2024 Zondax AG
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *  (c) 2018 - 2024 Zondax AG
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 
 #include "tx.h"
+
+#include <string.h>
+
 #include "apdu_codes.h"
 #include "buffering.h"
 #include "parser.h"
-#include <string.h>
 #include "zxmacros.h"
 
 #if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
-#define RAM_BUFFER_SIZE 8192
+#define RAM_BUFFER_SIZE   8192
 #define FLASH_BUFFER_SIZE 16384
 #elif defined(TARGET_NANOS)
-#define RAM_BUFFER_SIZE 256
+#define RAM_BUFFER_SIZE   256
 #define FLASH_BUFFER_SIZE 8192
 #endif
 
@@ -46,11 +48,7 @@ static parser_tx_t tx_obj;
 static parser_context_t ctx_parsed_tx;
 
 void tx_initialize() {
-    buffering_init(
-        ram_buffer,
-        sizeof(ram_buffer),
-        (uint8_t *)N_appdata.buffer,
-        sizeof(N_appdata.buffer));
+    buffering_init(ram_buffer, sizeof(ram_buffer), (uint8_t *)N_appdata.buffer, sizeof(N_appdata.buffer));
 }
 
 void tx_reset() {
@@ -85,11 +83,7 @@ uint16_t tx_SignableDescriptionsLen() {
 const char *tx_parse() {
     MEMZERO(&tx_obj, sizeof(tx_obj));
 
-    uint8_t err = parser_parse(
-            &ctx_parsed_tx,
-            tx_get_buffer(),
-            tx_get_buffer_length(),
-            &tx_obj);
+    uint8_t err = parser_parse(&ctx_parsed_tx, tx_get_buffer(), tx_get_buffer_length(), &tx_obj);
 
     CHECK_APP_CANARY()
 
@@ -107,8 +101,7 @@ const char *tx_parse() {
     return NULL;
 }
 
-void tx_parse_reset()
-{
+void tx_parse_reset() {
     MEMZERO(&tx_obj, sizeof(tx_obj));
 }
 
@@ -122,11 +115,8 @@ zxerr_t tx_getNumItems(uint8_t *num_items) {
     return zxerr_ok;
 }
 
-zxerr_t tx_getItem(int8_t displayIdx,
-                   char *outKey, uint16_t outKeyLen,
-                   char *outVal, uint16_t outValLen,
-                   uint8_t pageIdx, uint8_t *pageCount)
-{
+zxerr_t tx_getItem(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen, uint8_t pageIdx,
+                   uint8_t *pageCount) {
     uint8_t numItems = 0;
 
     CHECK_ZXERR(tx_getNumItems(&numItems))
@@ -135,20 +125,14 @@ zxerr_t tx_getItem(int8_t displayIdx,
         return zxerr_no_data;
     }
 
-    parser_error_t err = parser_getItem(&ctx_parsed_tx,
-                                        displayIdx,
-                                        outKey, outKeyLen,
-                                        outVal, outValLen,
-                                        pageIdx, pageCount);
+    parser_error_t err =
+        parser_getItem(&ctx_parsed_tx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 
     // Convert error codes
-    if (err == parser_no_data ||
-        err == parser_display_idx_out_of_range ||
-        err == parser_display_page_out_of_range)
+    if (err == parser_no_data || err == parser_display_idx_out_of_range || err == parser_display_page_out_of_range)
         return zxerr_no_data;
 
-    if (err != parser_ok)
-        return zxerr_unknown;
+    if (err != parser_ok) return zxerr_unknown;
 
     return zxerr_ok;
 }

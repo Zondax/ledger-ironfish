@@ -19,9 +19,9 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 typedef struct {
     const uint8_t *ptr;
     uint16_t len;
@@ -32,7 +32,6 @@ typedef struct {
     bytes_t bytes;
 } OptBytes_t;
 
-
 typedef enum {
     SpendingKeyGenerator,
     ProofGenerationKeyGenerator,
@@ -41,7 +40,7 @@ typedef enum {
 } constant_key_t;
 
 #define KEY_LENGTH 32
-#define RNG_LEN 80
+#define RNG_LEN    80
 
 typedef uint8_t spending_key_t[KEY_LENGTH];
 typedef uint8_t ask_t[KEY_LENGTH];

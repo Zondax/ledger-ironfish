@@ -46,7 +46,8 @@ __Z_INLINE void app_sign() {
     uint8_t publickeyRandomness[KEY_LENGTH] = {0};
     tx_getPublicKeyRandomness(publickeyRandomness);
     const uint16_t totalDescriptions = tx_SignableDescriptionsLen();
-    const zxerr_t err = crypto_sign(totalDescriptions, publickeyRandomness,  txnHash, G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3);
+    const zxerr_t err =
+        crypto_sign(totalDescriptions, publickeyRandomness, txnHash, G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3);
 
     if (err != zxerr_ok) {
         set_code(G_io_apdu_buffer, 0, APDU_CODE_SIGN_VERIFY_ERROR);

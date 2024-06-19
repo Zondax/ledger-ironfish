@@ -22,7 +22,7 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-#if defined (LEDGER_SPECIFIC)
+#if defined(LEDGER_SPECIFIC)
 // blake2 needs to define output size in bits 512 bits = 64 bytes
 #define BLAKE2B_OUTPUT_LEN 512
 #else
@@ -36,5 +36,3 @@ const char SIGNING_REDJUBJUB[16] = "Zcash_RedJubjubH";
 #ifdef __cplusplus
 }
 #endif
-
-
