@@ -15,7 +15,7 @@
  ******************************************************************************* */
 
 import Zemu, { ButtonKind, zondaxMainmenuNavigation } from '@zondax/zemu'
-import { PATH, defaultOptions, expectedKeys, models, spend_1_output_1, spend_1_output_4_mint_1_burn_1, txBlobExample } from './common'
+import { PATH, defaultOptions, expectedKeys, models, spend_1_output_1, spend_1_output_4_mint_1_burn_1 } from './common'
 import IronfishApp, { IronfishKeys, ResponseAddress, ResponseProofGenKey, ResponseViewKey } from '@zondax/ledger-ironfish'
 
 jest.setTimeout(20000)
@@ -197,7 +197,7 @@ describe('Standard', function () {
     }
   })
 
-  test.only.each(models)('blind-signing2', async function (m) {
+  test.concurrent.each(models)('blind-signing2', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })

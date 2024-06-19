@@ -21,18 +21,11 @@
 #include "cx.h"
 #include "cx_blake2b.h"
 #include "keys_def.h"
+#include "rslib.h"
 #include "zxformat.h"
 #include "zxmacros.h"
 
 uint32_t hdPath[HDPATH_LEN_DEFAULT];
-
-#define CHECK_PARSER_OK(CALL)        \
-    do {                             \
-        cx_err_t __cx_err = CALL;    \
-        if (__cx_err != parser_ok) { \
-            return zxerr_unknown;    \
-        }                            \
-    } while (0)
 
 static zxerr_t computeKeys(keys_t *saplingKeys) {
     if (saplingKeys == NULL) {

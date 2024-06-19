@@ -91,8 +91,8 @@ parser_error_t transaction_signature_hash(parser_tx_t *txObj, uint8_t output[HAS
     ASSERT_CX_OK(cx_blake2b_init2_no_throw(&ctx, 256, NULL, 0, personalization, sizeof(personalization)));
     ASSERT_CX_OK(cx_blake2b_update(&ctx, &TXN_SIGNATURE_VERSION, 1));
     ASSERT_CX_OK(cx_blake2b_update(&ctx, &txObj->transactionVersion, 1));
-    ASSERT_CX_OK(cx_blake2b_update(&ctx, &txObj->expiration, 4));
-    ASSERT_CX_OK(cx_blake2b_update(&ctx, &txObj->fee, 8));
+    ASSERT_CX_OK(cx_blake2b_update(&ctx, (const uint8_t *)&txObj->expiration, 4));
+    ASSERT_CX_OK(cx_blake2b_update(&ctx, (const uint8_t *)&txObj->fee, 8));
     ASSERT_CX_OK(cx_blake2b_update(&ctx, txObj->randomizedPublicKey.ptr, txObj->randomizedPublicKey.len));
 #else
     blake2b_state state = {0};
@@ -107,7 +107,7 @@ parser_error_t transaction_signature_hash(parser_tx_t *txObj, uint8_t output[HAS
     // Spends
     const uint16_t SPENDLEN = 32 + 192 + 32 + 32 + 4 + 32 + 64;
     for (uint64_t i = 0; i < txObj->spends.elements; i++) {
-        uint8_t *spend_i = txObj->spends.data.ptr + (SPENDLEN * i) + (32 * (i + 1));
+        const uint8_t *spend_i = txObj->spends.data.ptr + (SPENDLEN * i) + (32 * (i + 1));
         // Don't hash neither public_key_randomness(32) nor binding_signature(64)
 #if defined(LEDGER_SPECIFIC)
         ASSERT_CX_OK(cx_blake2b_update(&ctx, spend_i, SPENDLEN - (32 + 64)));
@@ -119,7 +119,7 @@ parser_error_t transaction_signature_hash(parser_tx_t *txObj, uint8_t output[HAS
     // Outputs
     const uint16_t OUTPUTLEN = 192 + 328;
     for (uint64_t i = 0; i < txObj->outputs.elements; i++) {
-        uint8_t *output_i = txObj->outputs.data.ptr + (OUTPUTLEN * i);
+        const uint8_t *output_i = txObj->outputs.data.ptr + (OUTPUTLEN * i);
 #if defined(LEDGER_SPECIFIC)
         ASSERT_CX_OK(cx_blake2b_update(&ctx, output_i, OUTPUTLEN));
 #else
@@ -132,8 +132,7 @@ parser_error_t transaction_signature_hash(parser_tx_t *txObj, uint8_t output[HAS
     uint16_t tmpOffset = 0;
     for (uint64_t i = 0; i < txObj->mints.elements; i++) {
         const uint8_t *mint_i = txObj->mints.data.ptr + tmpOffset;  // + 32;
-
-        const uint8_t transferOwnershipToLen = mint_i[MINTLEN] == 1 ? 33 : 1;
+        const int8_t transferOwnershipToLen = txObj->transactionVersion == V1 ? (-32) : mint_i[MINTLEN] == 1 ? 33 : 1;
         const uint16_t tmpMintLen = MINTLEN + transferOwnershipToLen + 64;
 
 // Don't hash neither public_key_randomness(32) nor binding_signature(64)
@@ -149,7 +148,7 @@ parser_error_t transaction_signature_hash(parser_tx_t *txObj, uint8_t output[HAS
     // Burns
     const uint16_t BURNLEN = 32 + 8;
     for (uint64_t i = 0; i < txObj->burns.elements; i++) {
-        uint8_t *burn_i = txObj->burns.data.ptr + (BURNLEN * i);
+        const uint8_t *burn_i = txObj->burns.data.ptr + (BURNLEN * i);
 #if defined(LEDGER_SPECIFIC)
         ASSERT_CX_OK(cx_blake2b_update(&ctx, burn_i, BURNLEN));
 #else
