@@ -22,6 +22,7 @@
 #include "keys_def.h"
 #include "crypto_helper.h"
 #include "rslib.h"
+#include "utils.h"
 
 using namespace std;
 struct IronfishKeys {
@@ -35,15 +36,6 @@ struct IronfishKeys {
         string outgoingViewingKey;      //ovk
         string publicAddress;
 };
-
-string toHexString(const uint8_t* data, size_t length) {
-    std::stringstream hexStream;
-    hexStream << std::hex << std::setfill('0');
-    for (size_t i = 0; i < length; ++i) {
-        hexStream << std::setw(2) << static_cast<int>(data[i]);
-    }
-    return hexStream.str();
-}
 
 // Generated using ironfish SDK (public_address_generation)
 vector<IronfishKeys> testvectors {
