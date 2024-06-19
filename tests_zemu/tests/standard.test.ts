@@ -15,10 +15,10 @@
  ******************************************************************************* */
 
 import Zemu, { ButtonKind, zondaxMainmenuNavigation } from '@zondax/zemu'
-import { PATH, defaultOptions, expectedKeys, models, txBlobExample } from './common'
+import { PATH, defaultOptions, expectedKeys, models, spend_1_output_1, spend_1_output_4_mint_1_burn_1, txBlobExample } from './common'
 import IronfishApp, { IronfishKeys, ResponseAddress, ResponseProofGenKey, ResponseViewKey } from '@zondax/ledger-ironfish'
 
-jest.setTimeout(60000)
+jest.setTimeout(20000)
 
 describe('Standard', function () {
   test.concurrent.each(models)('can start and stop container', async function (m) {
@@ -167,68 +167,63 @@ describe('Standard', function () {
     }
   })
 
-  // #{TODO} --> Add Zemu tests for different transactions. Include expert mode if needed
-  // test.concurrent.each(models)('sign tx0 normal', async function (m) {
-  //   const sim = new Zemu(m.path)
-  //   try {
-  //     await sim.start({ ...defaultOptions, model: m.name })
-  //     const app = new TemplateApp(sim.getTransport())
+  test.concurrent.each(models)('blind-signing', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new IronfishApp(sim.getTransport())
 
-  //     const txBlob = Buffer.from(txBlobExample)
-  //     const responseAddr = await app.getAddressAndPubKey(accountId)
-  //     const pubKey = responseAddr.publicKey
+      const txBlob = Buffer.from(spend_1_output_1, 'hex')
+      const responsePublicAddress = await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false);
+      console.log(responsePublicAddress)
 
-  //     // do not wait here.. we need to navigate
-  //     const signatureRequest = app.sign(accountId, txBlob)
+      // do not wait here.. we need to navigate
+      const signatureRequest = app.sign(PATH, txBlob,)
 
-  //     // Wait until we are not in the main menu
-  //     await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-  //     await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_asset_freeze`,50000)
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-blind_sign`)
 
-  //     const signatureResponse = await signatureRequest
-  //     console.log(signatureResponse)
+      const signatureResponse = await signatureRequest
+      console.log(signatureResponse)
 
-  //     expect(signatureResponse.return_code).toEqual(0x9000)
-  //     expect(signatureResponse.error_message).toEqual('No errors')
+      console.log(signatureResponse.signatures?.length)
 
-  //     // Now verify the signature
-  //     const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
-  //     const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
-  //     expect(valid).toEqual(true)
-  //   } finally {
-  //     await sim.close()
-  //   }
-  // })
+      expect(signatureResponse.returnCode).toEqual(0x9000)
+      expect(signatureResponse.errorMessage).toEqual('No errors')
 
-  // test.concurrent.each(models)('sign tx1 normal', async function (m) {
-  //   const sim = new Zemu(m.path)
-  //   try {
-  //     await sim.start({ ...defaultOptions, model: m.name })
-  //     const app = new TemplateApp(sim.getTransport())
+    } finally {
+      await sim.close()
+    }
+  })
 
-  //     const txBlob = Buffer.from(txBlobExample)
-  //     const responseAddr = await app.getAddressAndPubKey(accountId)
-  //     const pubKey = responseAddr.publicKey
+  test.only.each(models)('blind-signing2', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new IronfishApp(sim.getTransport())
 
-  //     // do not wait here.. we need to navigate
-  //     const signatureRequest = app.sign(accountId, txBlob)
+      const txBlob = Buffer.from(spend_1_output_4_mint_1_burn_1, 'hex')
+      const responsePublicAddress = await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false);
+      console.log(responsePublicAddress)
 
-  //     // Wait until we are not in the main menu
-  //     await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-  //     await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_asset_freeze`,50000)
+      // do not wait here.. we need to navigate
+      const signatureRequest = app.sign(PATH, txBlob,)
 
-  //     const signatureResponse = await signatureRequest
-  //     console.log(signatureResponse)
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-blind_sign2`)
 
-  //     expect(signatureResponse.return_code).toEqual(0x9000)
-  //     expect(signatureResponse.error_message).toEqual('No errors')
+      const signatureResponse = await signatureRequest
+      console.log(signatureResponse)
 
-  //     // Now verify the signature
-  //     const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
-  //     const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
-  //     expect(valid).toEqual(true)
-  //   } finally {
-  //     await sim.close()
-  //   }
-  // })
+      console.log(signatureResponse.signatures?.length)
+
+      expect(signatureResponse.returnCode).toEqual(0x9000)
+      expect(signatureResponse.errorMessage).toEqual('No errors')
+
+    } finally {
+      await sim.close()
+    }
+  })
 })
