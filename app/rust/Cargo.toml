@@ -10,6 +10,7 @@ resolver = "2"
 name = "rslib"
 crate-type = ["staticlib"]
 
+
 [dependencies]
 jubjub = { version = "0.10.0", default-features = false }
 
@@ -27,7 +28,7 @@ overflow-checks = true
 lto = "fat"
 codegen-units = 1
 debug=true
-opt-level = "s"
+opt-level = 3
 panic = "abort"
 
 [features]

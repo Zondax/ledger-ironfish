@@ -14,7 +14,6 @@
 *  limitations under the License.
 ********************************************************************************/
 #![no_std]
-#![no_main]
 #![no_builtins]
 #![allow(dead_code, unused_imports)]
 
@@ -25,11 +24,10 @@ mod constants;
 
 use jubjub::{Fr, AffinePoint, ExtendedPoint};
 
-fn debug(_msg: &str) {}
-
 // ParserError should mirror parser_error_t from parser_common.
 // At the moment, just implement OK or Error
 #[repr(C)]
+#[derive(PartialEq, Debug)]
 pub enum ParserError {
     ParserOk = 0,
     ParserUnexpectedError = 5,
@@ -68,36 +66,41 @@ pub extern "C" fn scalar_multiplication(input: &[u8; 32], key: ConstantKey, outp
     ParserError::ParserOk
 }
 
+#[no_mangle]
+pub extern "C" fn randomizeKey(key: &[u8; 32], randomness: &[u8; 32], output: &mut [u8; 32]) -> ParserError {
+
+    let mut skfr = Fr::from_bytes(key).unwrap();
+    let alphafr = Fr::from_bytes(randomness).unwrap();
+    skfr += alphafr;
+    output.copy_from_slice(&skfr.to_bytes());
+
+    ParserError::ParserOk
+}
+
+#[no_mangle]
+pub extern "C" fn compute_sbar( s:  &[u8; 32], r:  &[u8; 32], rsk:  &[u8; 32], sbar:  &mut [u8; 32]) -> ParserError{
+    let s_point = Fr::from_bytes(s).unwrap();
+    let r_point = Fr::from_bytes(r).unwrap();
+    let rsk_point = Fr::from_bytes(rsk).unwrap();
+
+    let sbar_tmp = r_point + s_point * rsk_point;
+    sbar.copy_from_slice(&sbar_tmp.to_bytes());
+
+    ParserError::ParserOk
+}
+
+
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
+fn debug(_msg: &str) {}
 
 #[cfg(test)]
 mod tests {
-    // use curve25519_dalek::constants::RISTRETTO_BASEPOINT_POINT;
-    // use curve25519_dalek::edwards::EdwardsPoint;
-    // use curve25519_dalek::scalar::Scalar;
-    // use log::{debug, info};
-    // use schnorrkel::{context::*, Keypair, PublicKey, SecretKey, Signature};
-
-    // use crate::*;
-    // use core::ops::Mul;
-
-    // fn init_logging() {
-    //     let _ = env_logger::builder().is_test(true).try_init();
-    // }
-
-    // fn ristretto_scalarmult(sk: &[u8], pk: &mut [u8]) {
-    //     let mut seckey = [0u8; 32];
-    //     seckey.copy_from_slice(&sk[0..32]);
-    //     let pubkey = RISTRETTO_BASEPOINT_POINT
-    //         .mul(Scalar::from_bits(seckey))
-    //         .compress()
-    //         .0;
-    //     pk.copy_from_slice(&pubkey);
-    // }
-
+    use super::*;
+    extern crate std;
+    use std::println; // Make `println!` explicitly available for tests
 }
