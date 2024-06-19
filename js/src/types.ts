@@ -24,9 +24,7 @@ export interface ResponseViewKey extends ResponseBase {
 }
 
 export interface ResponseSign extends ResponseBase {
-  preSignHash?: Buffer;
-  signatureRS?: Buffer;
-  signatureDER?: Buffer;
+  signatures?: Buffer[];
 }
 
 export enum IronfishKeys {

@@ -25,6 +25,7 @@ import GenericApp, {
   Transport,
 } from "@zondax/ledger-js";
 import { processGetKeysResponse } from "./helper";
+import { REDJUBJUB_SIGNATURE_LEN, P2_VALUES } from "./consts";
 
 export * from "./types";
 
@@ -62,7 +63,7 @@ export default class IronfishApp extends GenericApp {
   }
 
   // #{TODO} --> Create sign methods, this are example ones!
-  async signSendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer, txtype: number): Promise<ResponseSign> {
+  async signSendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer): Promise<ResponseSign> {
     let payloadType = PAYLOAD_TYPE.ADD;
     if (chunkIdx === 1) {
       payloadType = PAYLOAD_TYPE.INIT;
@@ -72,7 +73,7 @@ export default class IronfishApp extends GenericApp {
     }
 
     return await this.transport
-      .send(this.CLA, this.INS.SIGN, payloadType, txtype, chunk, [
+      .send(this.CLA, this.INS.SIGN, payloadType, P2_VALUES.DEFAULT, chunk, [
         LedgerError.NoErrors,
         LedgerError.DataIsInvalid,
         LedgerError.BadKeyHandle,
@@ -83,9 +84,7 @@ export default class IronfishApp extends GenericApp {
         const returnCode = errorCodeData[0] * 256 + errorCodeData[1];
         let errorMessage = errorCodeToString(returnCode);
 
-        let preSignHash = Buffer.alloc(0);
-        let signatureRS = Buffer.alloc(0);
-        let signatureDER = Buffer.alloc(0);
+        let signatures: Buffer[] = [];
 
         if (
           returnCode === LedgerError.BadKeyHandle ||
@@ -96,13 +95,14 @@ export default class IronfishApp extends GenericApp {
         }
 
         if (returnCode === LedgerError.NoErrors && response.length > 2) {
-        //   preSignHash = response.subarray(0, PREHASH_LEN);
-        //   signatureRS = response.subarray(PREHASH_LEN, PREHASH_LEN + SIGRSLEN);
-        //   signatureDER = response.subarray(PREHASH_LEN + SIGRSLEN + 1, response.length - 2);
+          const signaturesLen = (response.length - 2) / REDJUBJUB_SIGNATURE_LEN
+          for (let i = 0; i < signaturesLen; i++) {
+            const tmpSignature = response.subarray(i * REDJUBJUB_SIGNATURE_LEN, i * REDJUBJUB_SIGNATURE_LEN + REDJUBJUB_SIGNATURE_LEN)
+            signatures.push(tmpSignature)
+          }
+
           return {
-            preSignHash,
-            signatureRS,
-            signatureDER,
+            signatures,
             returnCode,
             errorMessage,
           };
@@ -115,9 +115,9 @@ export default class IronfishApp extends GenericApp {
       }, processErrorResponse);
   }
 
-  async sign(path: string, message: Buffer, txtype: number): Promise<ResponseSign> {
-    const chunks = this.prepareChunks(path, message);
-    return await this.signSendChunk(1, chunks.length, chunks[0], txtype % 256).then(async (response) => {
+  async sign(path: string, blob: Buffer): Promise<ResponseSign> {
+    const chunks = this.prepareChunks(path, blob);
+    return await this.signSendChunk(1, chunks.length, chunks[0]).then(async (response) => {
       let result: ResponseSign = {
         returnCode: response.returnCode,
         errorMessage: response.errorMessage,
@@ -125,7 +125,7 @@ export default class IronfishApp extends GenericApp {
 
       for (let i = 1; i < chunks.length; i += 1) {
         // eslint-disable-next-line no-await-in-loop
-        result = await this.signSendChunk(1 + i, chunks.length, chunks[i], txtype % 256);
+        result = await this.signSendChunk(1 + i, chunks.length, chunks[i]);
         if (result.returnCode !== LedgerError.NoErrors) {
           break;
         }
