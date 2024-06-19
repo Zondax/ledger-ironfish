@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   (c) 2018 - 2023 Zondax AG
+ *   (c) 2018 - 2024 Zondax AG
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,6 +30,9 @@ extern "C" {
 #define HDPATH_1_DEFAULT (0x80000000u | 0x53a)  // 1338
 
 #define SECP256K1_PK_LEN 65u
+
+#define HASH_LEN 32u
+#define REDJUBJUB_SIGNATURE_LEN 64u
 
 #define SK_LEN_25519 64u
 #define SCALAR_LEN_ED25519 32u

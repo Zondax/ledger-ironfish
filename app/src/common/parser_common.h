@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  (c) 2018 - 2023 Zondax AG
+ *  (c) 2018 - 2024 Zondax AG
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -24,12 +24,23 @@ extern "C" {
 
 #include "parser_txdef.h"
 
-#define CHECK_ERROR(__CALL)                   \
-    {                                         \
-        parser_error_t __err = __CALL;        \
-        CHECK_APP_CANARY()                    \
-        if (__err != parser_ok) return __err; \
-    }
+#define CHECK_ERROR(__CALL)         \
+  do {                              \
+    parser_error_t __err = __CALL;  \
+    CHECK_APP_CANARY()              \
+    if (__err != parser_ok) {       \
+      return __err;                 \
+    }                               \
+  } while (0)
+
+#define CHECK_PARSER_OK(__CALL)     \
+  do {                              \
+    parser_error_t __err = __CALL;  \
+    CHECK_APP_CANARY()              \
+    if (__err != parser_ok) {       \
+      return zxerr_unknown;         \
+    }                               \
+  } while (0)
 
 typedef enum {
     // Generic errors

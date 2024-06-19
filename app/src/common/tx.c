@@ -1,5 +1,5 @@
 /*******************************************************************************
-*  (c) 2018 - 2023 Zondax AG
+*  (c) 2018 - 2024 Zondax AG
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -67,6 +67,19 @@ uint32_t tx_get_buffer_length() {
 
 uint8_t *tx_get_buffer() {
     return buffering_get_buffer()->data;
+}
+void tx_getTxnHash(uint8_t txnHash[HASH_LEN]) {
+    MEMCPY(txnHash, tx_obj.transactionHash, HASH_LEN);
+}
+
+void tx_getPublicKeyRandomness(uint8_t randomness[KEY_LENGTH]) {
+    MEMCPY(randomness, tx_obj.publicKeyRandomness.ptr, KEY_LENGTH);
+}
+
+uint16_t tx_SignableDescriptionsLen() {
+    // Return signable elements quantity
+    const uint16_t totalDescriptions = tx_obj.spends.elements + tx_obj.mints.elements;
+    return totalDescriptions;
 }
 
 const char *tx_parse() {

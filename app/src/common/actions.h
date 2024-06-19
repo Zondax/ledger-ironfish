@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   (c) 2018 - 2023 Zondax AG
+ *   (c) 2018 - 2024 Zondax AG
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -41,17 +41,19 @@ __Z_INLINE zxerr_t app_fill_keys(key_kind_e requestedKey) {
 }
 
 __Z_INLINE void app_sign() {
-    const uint8_t *message = tx_get_buffer();
-    const uint16_t messageLength = tx_get_buffer_length();
-
-    const zxerr_t err = crypto_sign(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, message, messageLength);
+    uint8_t txnHash[HASH_LEN] = {0};
+    tx_getTxnHash(txnHash);
+    uint8_t publickeyRandomness[KEY_LENGTH] = {0};
+    tx_getPublicKeyRandomness(publickeyRandomness);
+    const uint16_t totalDescriptions = tx_SignableDescriptionsLen();
+    const zxerr_t err = crypto_sign(totalDescriptions, publickeyRandomness,  txnHash, G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3);
 
     if (err != zxerr_ok) {
         set_code(G_io_apdu_buffer, 0, APDU_CODE_SIGN_VERIFY_ERROR);
         io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
     } else {
-        set_code(G_io_apdu_buffer, SK_LEN_25519, APDU_CODE_OK);
-        io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, SK_LEN_25519 + 2);
+        set_code(G_io_apdu_buffer, (totalDescriptions * REDJUBJUB_SIGNATURE_LEN), APDU_CODE_OK);
+        io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, (totalDescriptions * REDJUBJUB_SIGNATURE_LEN) + 2);
     }
 }
 

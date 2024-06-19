@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  (c) 2018 - 2023 Zondax AG
+ *  (c) 2018 - 2024 Zondax AG
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include "coin.h"
 #include "os.h"
 #include "zxerror.h"
+#include "parser_txdef.h"
 
 void tx_initialize();
 
@@ -50,3 +51,7 @@ zxerr_t tx_getNumItems(uint8_t *num_items);
 /// Gets an specific item from the transaction (including paging)
 zxerr_t tx_getItem(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outValue, uint16_t outValueLen,
                    uint8_t pageIdx, uint8_t *pageCount);
+
+void tx_getTxnHash(uint8_t txnHash[HASH_LEN]);
+void tx_getPublicKeyRandomness(uint8_t randomness[KEY_LENGTH]);
+uint16_t tx_SignableDescriptionsLen();

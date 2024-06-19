@@ -31,6 +31,7 @@ extern "C" {
 
 const char EXPANDED_SPEND_BLAKE2_KEY[16] = "Iron Fish Money ";
 const char CRH_IVK_PERSONALIZATION[8] = "Zcashivk";
+const char SIGNING_REDJUBJUB[16] = "Zcash_RedJubjubH";
 
 #ifdef __cplusplus
 }

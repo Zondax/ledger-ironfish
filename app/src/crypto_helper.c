@@ -17,6 +17,7 @@
 #include "keys_personalizations.h"
 #include <string.h>
 #include "zxformat.h"
+#include "coin.h"
 
 #include "rslib.h"
 
@@ -47,7 +48,6 @@ parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t m
     } else {
         memcpy(outputKey, output, KEY_LENGTH);
     }
-
     return parser_ok;
 }
 
@@ -71,4 +71,150 @@ parser_error_t computeIVK(const ak_t ak, const nk_t nk, ivk_t ivk) {
     //     return Err(IronfishError::new(IronfishErrorKind::InvalidViewingKey));
     // }
     return parser_ok;
+}
+
+parser_error_t transaction_signature_hash(parser_tx_t *txObj, uint8_t output[HASH_LEN]) {
+    if (txObj == NULL) {
+        return parser_no_data;
+    }
+
+    uint8_t personalization[8] = "IFsighsh";
+
+    // Common transaction fields
+    const uint8_t TXN_SIGNATURE_VERSION = 0;
+    #if defined(LEDGER_SPECIFIC)
+        cx_blake2b_t ctx = {0};
+        ASSERT_CX_OK(cx_blake2b_init2_no_throw(&ctx, 256, NULL, 0, personalization, sizeof(personalization)));
+        ASSERT_CX_OK(cx_blake2b_update(&ctx, &TXN_SIGNATURE_VERSION, 1));
+        ASSERT_CX_OK(cx_blake2b_update(&ctx, &txObj->transactionVersion, 1));
+        ASSERT_CX_OK(cx_blake2b_update(&ctx, &txObj->expiration, 4));
+        ASSERT_CX_OK(cx_blake2b_update(&ctx, &txObj->fee, 8));
+        ASSERT_CX_OK(cx_blake2b_update(&ctx, txObj->randomizedPublicKey.ptr, txObj->randomizedPublicKey.len));
+    #else
+        blake2b_state state = {0};
+        blake2b_init_with_personalization(&state, 32, (const uint8_t*)personalization, sizeof(personalization));
+        blake2b_update(&state, &TXN_SIGNATURE_VERSION, 1);
+        blake2b_update(&state, &txObj->transactionVersion, 1);
+        blake2b_update(&state, &txObj->expiration, 4);
+        blake2b_update(&state, &txObj->fee, 8);
+        blake2b_update(&state, txObj->randomizedPublicKey.ptr, txObj->randomizedPublicKey.len);
+    #endif
+
+
+
+    // Spends
+    const uint16_t SPENDLEN = 32 + 192 + 32 + 32 + 4 + 32 + 64;
+    for (uint64_t i = 0; i < txObj->spends.elements; i++) {
+         uint8_t *spend_i = txObj->spends.data.ptr + (SPENDLEN * i) + (32 * (i+1));
+         //Don't hash neither public_key_randomness(32) nor binding_signature(64)
+        #if defined(LEDGER_SPECIFIC)
+        ASSERT_CX_OK(cx_blake2b_update(&ctx, spend_i, SPENDLEN - (32+64)));
+        #else
+        blake2b_update(&state, spend_i, SPENDLEN - (32+64));
+        #endif
+    }
+
+    // Outputs
+    const uint16_t OUTPUTLEN = 192 + 328;
+    for (uint64_t i = 0; i < txObj->outputs.elements; i++) {
+        uint8_t *output_i = txObj->outputs.data.ptr + (OUTPUTLEN * i);
+        #if defined(LEDGER_SPECIFIC)
+        ASSERT_CX_OK(cx_blake2b_update(&ctx, output_i, OUTPUTLEN));
+        #else
+        blake2b_update(&state, output_i, OUTPUTLEN);
+        #endif
+    }
+
+    // Mints
+    const uint16_t MINTLEN = 32 + 192 + 193 + 8;
+    uint16_t tmpOffset = 0;
+    for (uint64_t i = 0; i < txObj->mints.elements; i++) {
+        const uint8_t *mint_i = txObj->mints.data.ptr + tmpOffset; // + 32;
+
+        const uint8_t transferOwnershipToLen = mint_i[MINTLEN] == 1 ? 33 : 1;
+        const uint16_t tmpMintLen = MINTLEN + transferOwnershipToLen + 64;
+
+        // Don't hash neither public_key_randomness(32) nor binding_signature(64)
+        #if defined(LEDGER_SPECIFIC)
+        ASSERT_CX_OK(cx_blake2b_update(&ctx, mint_i + 32, tmpMintLen - (32+64)));
+        #else
+        blake2b_update(&state, mint_i + 32, tmpMintLen - (32+64));
+        #endif
+
+        tmpOffset += tmpMintLen;
+    }
+
+    // Burns
+    const uint16_t BURNLEN = 32 + 8;
+    for (uint64_t i = 0; i < txObj->burns.elements; i++) {
+        uint8_t *burn_i = txObj->burns.data.ptr + (BURNLEN * i);
+        #if defined(LEDGER_SPECIFIC)
+        ASSERT_CX_OK(cx_blake2b_update(&ctx, burn_i, BURNLEN));
+        #else
+        blake2b_update(&state, burn_i, BURNLEN);
+        #endif
+    }
+
+    #if defined(LEDGER_SPECIFIC)
+    ASSERT_CX_OK(cx_blake2b_final(&ctx, output));
+    #else
+    blake2b_final(&state, output, HASH_LEN);
+    #endif
+    return parser_ok;
+}
+
+// h_star function requires a and b elements. However, we receive b split in two elements to save some memory
+// a = random[80] | r_bar[32] depending on who is calling this function
+// b = [randomizedPublicKey | transactionHash]
+static parser_error_t h_star(bytes_t a, const uint8_t randomizedPublicKey[32], const uint8_t transactionHash[32], uint8_t output[32]) {
+    uint8_t hash[BLAKE2B_OUTPUT_LEN] = {0};
+#if defined(LEDGER_SPECIFIC)
+    cx_blake2b_t ctx = {0};
+    ASSERT_CX_OK(cx_blake2b_init2_no_throw(&ctx, BLAKE2B_OUTPUT_LEN, NULL, 0, (uint8_t *)SIGNING_REDJUBJUB,
+                                           sizeof(SIGNING_REDJUBJUB)));
+    ASSERT_CX_OK(cx_blake2b_update(&ctx, a.ptr, a.len));
+    ASSERT_CX_OK(cx_blake2b_update(&ctx, randomizedPublicKey, 32));
+    ASSERT_CX_OK(cx_blake2b_update(&ctx, transactionHash, 32));
+    cx_blake2b_final(&ctx, hash);
+#else
+    blake2b_state state = {0};
+    blake2b_init_with_personalization(&state, BLAKE2B_OUTPUT_LEN, (const uint8_t *)SIGNING_REDJUBJUB,
+                                      sizeof(SIGNING_REDJUBJUB));
+    blake2b_update(&state, a.ptr, a.len);
+    blake2b_update(&state, randomizedPublicKey, 32);
+    blake2b_update(&state, transactionHash, 32);
+    blake2b_final(&state, hash, BLAKE2B_OUTPUT_LEN);
+#endif
+
+    CHECK_ERROR(from_bytes_wide(hash, output));
+
+    return parser_ok;
+}
+
+zxerr_t crypto_signRedjubjub(const uint8_t randomizedPrivateKey[KEY_LENGTH],const uint8_t rng[RNG_LEN],
+                             const uint8_t transactionHash[HASH_LEN], uint8_t output[REDJUBJUB_SIGNATURE_LEN]) {
+    uint8_t randomizedPublicKey[KEY_LENGTH] = {0};
+    CHECK_PARSER_OK(scalar_multiplication(randomizedPrivateKey, SpendingKeyGenerator, randomizedPublicKey));
+
+    //Signature [rbar, sbar]
+    uint8_t *rbar = output;
+    uint8_t *sbar = output + 32;
+
+    // Compute r and rbar
+    uint8_t r[32] = {0};
+    bytes_t a = {.ptr = rng, .len = RNG_LEN};
+    h_star(a, randomizedPublicKey, transactionHash, r);
+    scalar_multiplication(r, SpendingKeyGenerator, rbar);
+
+    //compute s and sbar
+    uint8_t s[32] = {0};
+    a.ptr = rbar;
+    a.len = 32;
+    h_star(a, randomizedPublicKey, transactionHash, s);
+    compute_sbar(s, r, randomizedPrivateKey, sbar);
+
+    MEMZERO(r, sizeof(r));
+    MEMZERO(s, sizeof(s));
+
+    return zxerr_ok;
 }

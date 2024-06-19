@@ -24,6 +24,8 @@ extern "C" {
 #include <stdbool.h>
 #include "parser_common.h"
 #include "keys_def.h"
+#include "coin.h"
+#include "zxerror.h"
 
 #define ASSERT_CX_OK(CALL)      \
   do {                         \
@@ -37,9 +39,12 @@ extern "C" {
 #define MODIFIER_NSK 0x01
 #define MODIFIER_OVK 0x02
 
-parser_error_t convertKey(const uint8_t spendingKey[32], const uint8_t modifier, uint8_t outputKey[32], bool reduceWideByte);
-parser_error_t generate_key(const uint8_t expandedKey[32], constant_key_t keyType, uint8_t output[32]);
+parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t modifier, uint8_t outputKey[KEY_LENGTH], bool reduceWideByte);
+parser_error_t generate_key(const uint8_t expandedKey[KEY_LENGTH], constant_key_t keyType, uint8_t output[KEY_LENGTH]);
 parser_error_t computeIVK(const ak_t ak, const nk_t nk, ivk_t ivk);
+
+parser_error_t transaction_signature_hash(parser_tx_t *txObj, uint8_t output[HASH_LEN]);
+zxerr_t crypto_signRedjubjub(const uint8_t randomizedPrivateKey[KEY_LENGTH],const uint8_t rng[RNG_LEN], const uint8_t transactionHash[HASH_LEN], uint8_t output[REDJUBJUB_SIGNATURE_LEN]);
 
 #ifdef __cplusplus
 }

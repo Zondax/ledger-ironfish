@@ -1,5 +1,5 @@
 /*******************************************************************************
- *   (c) 2018 - 2023 Zondax AG
+ *   (c) 2018 - 2024 Zondax AG
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ parser_error_t parser_init_context(parser_context_t *ctx, const uint8_t *buffer,
 }
 
 parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t dataLen, parser_tx_t *tx_obj) {
-    CHECK_ERROR(parser_init_context(ctx, data, dataLen))
+    CHECK_ERROR(parser_init_context(ctx, data, dataLen));
     ctx->tx_obj = tx_obj;
     return _read(ctx, tx_obj);
 }
@@ -50,23 +50,21 @@ parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t d
 parser_error_t parser_validate(parser_context_t *ctx) {
     // Iterate through all items to check that all can be shown and are valid
     uint8_t numItems = 0;
-    CHECK_ERROR(parser_getNumItems(ctx, &numItems))
+    CHECK_ERROR(parser_getNumItems(ctx, &numItems));
 
     char tmpKey[40] = {0};
     char tmpVal[40] = {0};
 
     for (uint8_t idx = 0; idx < numItems; idx++) {
         uint8_t pageCount = 0;
-        CHECK_ERROR(parser_getItem(ctx, idx, tmpKey, sizeof(tmpKey), tmpVal, sizeof(tmpVal), 0, &pageCount))
+        CHECK_ERROR(parser_getItem(ctx, idx, tmpKey, sizeof(tmpKey), tmpVal, sizeof(tmpVal), 0, &pageCount));
     }
     return parser_ok;
 }
 
 parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_items) {
-    // #{TODO} --> function to retrieve num Items
-    // *num_items = _getNumItems();
     UNUSED(ctx);
-    *num_items = 1;
+    *num_items = 5;
     if (*num_items == 0) {
         return parser_unexpected_number_items;
     }
@@ -92,31 +90,72 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
     UNUSED(pageIdx);
     *pageCount = 1;
     uint8_t numItems = 0;
-    CHECK_ERROR(parser_getNumItems(ctx, &numItems))
+    CHECK_ERROR(parser_getNumItems(ctx, &numItems));
     CHECK_APP_CANARY()
 
-    CHECK_ERROR(checkSanity(numItems, displayIdx))
+    CHECK_ERROR(checkSanity(numItems, displayIdx));
     cleanOutput(outKey, outKeyLen, outVal, outValLen);
 
     switch (displayIdx) {
         case 0:
-            // Display Item 0
-            snprintf(outKey, outKeyLen, "Title #0");
-            snprintf(outVal, outValLen, "Value #0");
+            snprintf(outKey, outKeyLen, "Spends");
+            snprintf(outVal, outValLen, "%d", (uint8_t)ctx->tx_obj->spends.elements);
             return parser_ok;
         case 1:
-            // Display Item 1
-            snprintf(outKey, outKeyLen, "Title #1");
-            snprintf(outVal, outValLen, "Value #1");
+            snprintf(outKey, outKeyLen, "Outputs");
+            snprintf(outVal, outValLen, "%d", (uint8_t)ctx->tx_obj->outputs.elements);
             return parser_ok;
-        case 10:
-            // Display Item 10
-            snprintf(outKey, outKeyLen, "Title #N");
-            snprintf(outVal, outValLen, "Value #N");
+        case 2:
+            snprintf(outKey, outKeyLen, "Mints");
+            snprintf(outVal, outValLen, "%d", (uint8_t)ctx->tx_obj->mints.elements);
             return parser_ok;
+        case 3:
+            snprintf(outKey, outKeyLen, "Burns");
+            snprintf(outVal, outValLen, "%d", (uint8_t)ctx->tx_obj->burns.elements);
+            return parser_ok;
+        case 4: {
+            snprintf(outKey, outKeyLen, "TxnHash");
+            pageStringHex(outVal, outValLen, ctx->tx_obj->transactionHash, sizeof(ctx->tx_obj->transactionHash), pageIdx, pageCount);
+            return parser_ok;
+        }
         default:
             break;
     }
 
     return parser_display_idx_out_of_range;
+}
+
+const char *parser_getErrorDescription(parser_error_t err) {
+    switch (err) {
+        case parser_ok:
+            return "No error";
+        case parser_no_data:
+            return "No more data";
+        case parser_init_context_empty:
+            return "Initialized empty context";
+        case parser_unexpected_buffer_end:
+            return "Unexpected buffer end";
+        case parser_unexpected_version:
+            return "Unexpected version";
+        case parser_unexpected_characters:
+            return "Unexpected characters";
+        case parser_unexpected_field:
+            return "Unexpected field";
+        case parser_duplicated_field:
+            return "Unexpected duplicated field";
+        case parser_value_out_of_range:
+            return "Value out of range";
+        case parser_unexpected_chain:
+            return "Unexpected chain";
+        case parser_missing_field:
+            return "missing field";
+
+        case parser_display_idx_out_of_range:
+            return "display index out of range";
+        case parser_display_page_out_of_range:
+            return "display page out of range";
+
+        default:
+            return "Unrecognized error code";
+    }
 }

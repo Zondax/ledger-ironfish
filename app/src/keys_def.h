@@ -21,10 +21,16 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 typedef struct {
-    uint8_t *ptr;
+    const uint8_t *ptr;
     uint16_t len;
 } bytes_t;
+
+typedef struct {
+    bool hasBytes;
+    bytes_t bytes;
+} OptBytes_t;
 
 
 typedef enum {
@@ -35,6 +41,7 @@ typedef enum {
 } constant_key_t;
 
 #define KEY_LENGTH 32
+#define RNG_LEN 80
 
 typedef uint8_t spending_key_t[KEY_LENGTH];
 typedef uint8_t ask_t[KEY_LENGTH];
