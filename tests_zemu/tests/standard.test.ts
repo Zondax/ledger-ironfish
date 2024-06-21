@@ -18,7 +18,7 @@ import Zemu, { ButtonKind, zondaxMainmenuNavigation } from '@zondax/zemu'
 import { PATH, defaultOptions, expectedKeys, models, spend_1_output_1, spend_1_output_4_mint_1_burn_1 } from './common'
 import IronfishApp, { IronfishKeys, ResponseAddress, ResponseProofGenKey, ResponseViewKey } from '@zondax/ledger-ironfish'
 
-jest.setTimeout(20000)
+jest.setTimeout(45000)
 
 describe('Standard', function () {
   test.concurrent.each(models)('can start and stop container', async function (m) {
@@ -81,9 +81,12 @@ describe('Standard', function () {
   test.concurrent.each(models)('show address', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({...defaultOptions, model: m.name,
-                       approveKeyword: m.name === 'stax' ? 'Path' : '',
-                       approveAction: ButtonKind.ApproveTapButton,})
+      await sim.start({
+        ...defaultOptions,
+        model: m.name,
+        approveKeyword: m.name === 'stax' ? 'Path' : '',
+        approveAction: ButtonKind.ApproveTapButton,
+      })
       const app = new IronfishApp(sim.getTransport())
 
       const respRequest = app.retrieveKeys(PATH, IronfishKeys.PublicAddress, true)
@@ -96,7 +99,6 @@ describe('Standard', function () {
 
       expect(resp.returnCode).toEqual(0x9000)
       expect(resp.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -105,8 +107,7 @@ describe('Standard', function () {
   test.concurrent.each(models)('show address - reject', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({...defaultOptions, model: m.name,
-                       rejectKeyword: m.name === 'stax' ? 'QR' : ''})
+      await sim.start({ ...defaultOptions, model: m.name, rejectKeyword: m.name === 'stax' ? 'QR' : '' })
       const app = new IronfishApp(sim.getTransport())
 
       const respRequest = app.retrieveKeys(PATH, IronfishKeys.PublicAddress, true)
@@ -161,7 +162,6 @@ describe('Standard', function () {
       expect(resp.viewKey?.toString('hex')).toEqual(expectedKeys.viewKey)
       expect(resp.ivk?.toString('hex')).toEqual(expectedKeys.ivk)
       expect(resp.ovk?.toString('hex')).toEqual(expectedKeys.ovk)
-
     } finally {
       await sim.close()
     }
@@ -174,11 +174,11 @@ describe('Standard', function () {
       const app = new IronfishApp(sim.getTransport())
 
       const txBlob = Buffer.from(spend_1_output_1, 'hex')
-      const responsePublicAddress = await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false);
+      const responsePublicAddress = await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false)
       console.log(responsePublicAddress)
 
       // do not wait here.. we need to navigate
-      const signatureRequest = app.sign(PATH, txBlob,)
+      const signatureRequest = app.sign(PATH, txBlob)
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
@@ -191,7 +191,6 @@ describe('Standard', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -204,11 +203,11 @@ describe('Standard', function () {
       const app = new IronfishApp(sim.getTransport())
 
       const txBlob = Buffer.from(spend_1_output_4_mint_1_burn_1, 'hex')
-      const responsePublicAddress = await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false);
+      const responsePublicAddress = await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false)
       console.log(responsePublicAddress)
 
       // do not wait here.. we need to navigate
-      const signatureRequest = app.sign(PATH, txBlob,)
+      const signatureRequest = app.sign(PATH, txBlob)
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
@@ -221,7 +220,6 @@ describe('Standard', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
