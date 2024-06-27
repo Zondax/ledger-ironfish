@@ -117,9 +117,8 @@ catch_cx_error:
     return error;
 }
 
-zxerr_t crypto_sign(const uint16_t signatures, const uint8_t publickeyRandomness[32], const uint8_t txnHash[32],
-                    uint8_t *output, uint16_t outputLen) {
-    if (output == NULL || outputLen < (signatures * REDJUBJUB_SIGNATURE_LEN)) {
+zxerr_t crypto_sign(const uint8_t publickeyRandomness[32], const uint8_t txnHash[32], uint8_t *output, uint16_t outputLen) {
+    if (output == NULL || outputLen < REDJUBJUB_SIGNATURE_LEN) {
         return zxerr_no_data;
     }
     MEMZERO(output, outputLen);
@@ -138,17 +137,9 @@ zxerr_t crypto_sign(const uint16_t signatures, const uint8_t publickeyRandomness
     randomizeKey(saplingKeys.ask, publickeyRandomness, randomnizedPrivateKey);
 
     if (error == zxerr_ok) {
-        // key will be used as private key: first we randomize it
         uint8_t rng[RNG_LEN] = {0};
-        uint8_t *outputPtr = output;
-        for (uint16_t i = 0; i < signatures; i++) {
-            cx_rng_no_throw(rng, RNG_LEN);
-            error = crypto_signRedjubjub(randomnizedPrivateKey, rng, txnHash, outputPtr);
-            if (error != zxerr_ok) {
-                break;
-            }
-            outputPtr += REDJUBJUB_SIGNATURE_LEN;
-        }
+        cx_rng_no_throw(rng, RNG_LEN);
+        error = crypto_signRedjubjub(randomnizedPrivateKey, rng, txnHash, output);
     }
 
 catch_cx_error:
