@@ -107,7 +107,7 @@ parser_error_t transaction_signature_hash(parser_tx_t *txObj, uint8_t output[HAS
     // Spends
     const uint16_t SPENDLEN = 32 + 192 + 32 + 32 + 4 + 32 + 64;
     for (uint64_t i = 0; i < txObj->spends.elements; i++) {
-        const uint8_t *spend_i = txObj->spends.data.ptr + (SPENDLEN * i) + (32 * (i + 1));
+        const uint8_t *spend_i = txObj->spends.data.ptr + (SPENDLEN * i) + 32;
         // Don't hash neither public_key_randomness(32) nor binding_signature(64)
 #if defined(LEDGER_SPECIFIC)
         ASSERT_CX_OK(cx_blake2b_update(&ctx, spend_i, SPENDLEN - (32 + 64)));
