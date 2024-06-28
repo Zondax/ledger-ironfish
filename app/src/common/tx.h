@@ -54,4 +54,3 @@ zxerr_t tx_getItem(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *ou
 
 void tx_getTxnHash(uint8_t txnHash[HASH_LEN]);
 void tx_getPublicKeyRandomness(uint8_t randomness[KEY_LENGTH]);
-uint16_t tx_SignableDescriptionsLen();

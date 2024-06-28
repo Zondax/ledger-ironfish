@@ -15,7 +15,7 @@
  ******************************************************************************* */
 
 import Zemu, { ButtonKind, zondaxMainmenuNavigation } from '@zondax/zemu'
-import { PATH, defaultOptions, expectedKeys, models, spend_1_output_1, spend_1_output_4_mint_1_burn_1 } from './common'
+import { PATH, defaultOptions, expectedKeys, models, spend_1_output_1, spend_1_output_4_mint_1_burn_1, spend_2_output_6_mint_2_burn_1 } from './common'
 import IronfishApp, { IronfishKeys, ResponseAddress, ResponseProofGenKey, ResponseViewKey } from '@zondax/ledger-ironfish'
 
 jest.setTimeout(45000)
@@ -212,6 +212,35 @@ describe('Standard', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
       await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-blind_sign2`)
+
+      const signatureResponse = await signatureRequest
+      console.log(signatureResponse)
+
+      console.log(signatureResponse.signatures?.length)
+
+      expect(signatureResponse.returnCode).toEqual(0x9000)
+      expect(signatureResponse.errorMessage).toEqual('No errors')
+    } finally {
+      await sim.close()
+    }
+  })
+
+  test.concurrent.each(models)('blind-signing3', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new IronfishApp(sim.getTransport())
+
+      const txBlob = Buffer.from(spend_2_output_6_mint_2_burn_1, 'hex')
+      const responsePublicAddress = await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false)
+      console.log(responsePublicAddress)
+
+      // do not wait here.. we need to navigate
+      const signatureRequest = app.sign(PATH, txBlob)
+
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-blind_sign3`)
 
       const signatureResponse = await signatureRequest
       console.log(signatureResponse)

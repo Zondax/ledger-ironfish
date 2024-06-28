@@ -74,12 +74,6 @@ void tx_getPublicKeyRandomness(uint8_t randomness[KEY_LENGTH]) {
     MEMCPY(randomness, tx_obj.publicKeyRandomness.ptr, KEY_LENGTH);
 }
 
-uint16_t tx_SignableDescriptionsLen() {
-    // Return signable elements quantity
-    const uint16_t totalDescriptions = tx_obj.spends.elements + tx_obj.mints.elements;
-    return totalDescriptions;
-}
-
 const char *tx_parse() {
     MEMZERO(&tx_obj, sizeof(tx_obj));
 
