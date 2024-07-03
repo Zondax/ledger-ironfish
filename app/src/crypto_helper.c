@@ -28,6 +28,20 @@
 #endif
 #include "blake2.h"
 
+static bool isAllZeroes(const void *buf, size_t n) {
+    if (buf == NULL) {
+        return false;
+    }
+
+    uint8_t *p = (uint8_t *) buf;
+    for (size_t i = 0; i < n; ++i) {
+        if (p[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t modifier, uint8_t outputKey[KEY_LENGTH],
                           bool reduceWideByte) {
     uint8_t output[64] = {0};
@@ -52,6 +66,10 @@ parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t m
     } else {
         memcpy(outputKey, output, KEY_LENGTH);
     }
+
+    if (isAllZeroes(output, KEY_LENGTH)) {
+        return parser_unexpected_error;
+    }
     return parser_ok;
 }
 
@@ -60,6 +78,10 @@ parser_error_t generate_key(const uint8_t expandedKey[KEY_LENGTH], constant_key_
         return parser_value_out_of_range;
     }
     scalar_multiplication(expandedKey, keyType, output);
+
+    if (isAllZeroes(output, KEY_LENGTH)) {
+        return parser_unexpected_error;
+    }
     return parser_ok;
 }
 
@@ -71,9 +93,9 @@ parser_error_t computeIVK(const ak_t ak, const nk_t nk, ivk_t ivk) {
     blake2s_final(&state, ivk, KEY_LENGTH);
 
     ivk[31] &= 0x07;
-    // if ivk == [0; 32] {
-    //     return Err(IronfishError::new(IronfishErrorKind::InvalidViewingKey));
-    // }
+    if (isAllZeroes(ivk, KEY_LENGTH)) {
+        return parser_unexpected_error;
+    }
     return parser_ok;
 }
 
