@@ -187,8 +187,6 @@ describe('Standard', function () {
       const signatureResponse = await signatureRequest
       console.log(signatureResponse)
 
-      console.log(signatureResponse.signatures?.length)
-
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
     } finally {
@@ -216,8 +214,6 @@ describe('Standard', function () {
       const signatureResponse = await signatureRequest
       console.log(signatureResponse)
 
-      console.log(signatureResponse.signatures?.length)
-
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
     } finally {
@@ -244,8 +240,6 @@ describe('Standard', function () {
 
       const signatureResponse = await signatureRequest
       console.log(signatureResponse)
-
-      console.log(signatureResponse.signatures?.length)
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
