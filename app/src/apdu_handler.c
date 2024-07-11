@@ -29,6 +29,7 @@
 #include "view.h"
 #include "view_internal.h"
 #include "zxmacros.h"
+#include "dkg.h"
 
 static bool tx_initialized = false;
 
@@ -198,6 +199,12 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 case INS_SIGN: {
                     CHECK_PIN_VALIDATED()
                     handleSign(flags, tx, rx);
+                    break;
+                }
+
+                case INS_GET_IDENTITY: {
+                    CHECK_PIN_VALIDATED()
+                    handleDKGGetIdentity(flags, tx, rx);
                     break;
                 }
 

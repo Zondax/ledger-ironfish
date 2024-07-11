@@ -19,7 +19,6 @@
 extern "C" {
 #endif
 
-// #{TODO} ---> Replace CLA, Token symbol, HDPATH, etc etc
 #define CLA 0x59
 
 // This instruction will work for requesting any of the sapling keys
@@ -41,6 +40,8 @@ extern "C" {
 #define ED25519_SIGNATURE_SIZE  64u
 
 #define PK_LEN_25519            32u
+
+#define INS_GET_IDENTITY        0x10
 
 typedef enum {
     PublicAddress = 0,

@@ -13,26 +13,22 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
+#include "dkg.h"
 
-#pragma once
+#include <os_io_seproxyhal.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <sigutils.h>
-#include <stdbool.h>
-
-#include "coin.h"
+#include "apdu_codes.h"
+#include "crypto.h"
+#include "keys_def.h"
 #include "zxerror.h"
 
-extern uint32_t hdPath[HDPATH_LEN_DEFAULT];
+void handleDKGGetIdentity(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    const zxerr_t err = crypto_fillIdentity(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 2);
+    if (err != zxerr_ok) {
+        *tx = 0;
+        THROW(APDU_CODE_EXECUTION_ERROR);
+    }
 
-zxerr_t crypto_fillKeys(uint8_t *buffer, uint16_t bufferLen, key_kind_e requestedKey, uint16_t *cmdResponseLen);
-zxerr_t crypto_sign(const uint8_t publickeyRandomness[32], const uint8_t txnHash[32], uint8_t *output, uint16_t outputLen);
-
-zxerr_t crypto_fillIdentity(uint8_t *buffer, uint16_t bufferLen);
-
-#ifdef __cplusplus
+    *tx = IDENTITY_LEN;
+    THROW(APDU_CODE_OK);
 }
-#endif

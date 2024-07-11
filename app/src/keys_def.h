@@ -39,6 +39,8 @@ typedef enum {
     PointInvalidKey,
 } constant_key_t;
 
+#define IDENTITY_LEN    (32+32+64)
+
 #define KEY_LENGTH 32
 #define RNG_LEN    80
 

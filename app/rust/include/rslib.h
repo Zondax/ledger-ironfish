@@ -16,6 +16,8 @@ parser_error_t randomizeKey(const uint8_t key[KEY_LENGTH], const uint8_t randomn
 parser_error_t compute_sbar(const uint8_t s[KEY_LENGTH], const uint8_t r[KEY_LENGTH], const uint8_t rsk[KEY_LENGTH],
                             uint8_t sbar[32]);
 
+parser_error_t privkey_to_identity(const uint8_t privkey[KEY_LENGTH], uint8_t identity[IDENTITY_LEN]);
+
 #ifdef __cplusplus
 }
 #endif

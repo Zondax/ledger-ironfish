@@ -16,6 +16,15 @@
 
 use jubjub::{AffineNielsPoint, AffinePoint, Fq};
 
+// ParserError should mirror parser_error_t from parser_common.
+// At the moment, just implement OK or Error
+#[repr(C)]
+#[derive(PartialEq, Debug)]
+pub enum ParserError {
+    ParserOk = 0,
+    ParserUnexpectedError = 5,
+}
+
 pub const SPENDING_KEY_GENERATOR: AffineNielsPoint = AffinePoint::from_raw_unchecked(
     Fq::from_raw([
         0x47bf_4692_0a95_a753,
@@ -63,3 +72,12 @@ pub const PUBLIC_KEY_GENERATOR: AffineNielsPoint = AffinePoint::from_raw_uncheck
     ]),
 )
 .to_niels();
+
+/// The length of a ed25519 `SecretKey`, in bytes.
+pub const SECRET_KEY_LENGTH: usize = 32;
+
+/// The length of an ed25519 `PublicKey`, in bytes.
+pub const PUBLIC_KEY_LENGTH: usize = 32;
+
+/// The length of an ed25519 `Keypair`, in bytes.
+pub const KEYPAIR_LENGTH: usize = SECRET_KEY_LENGTH + PUBLIC_KEY_LENGTH;

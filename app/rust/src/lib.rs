@@ -19,19 +19,16 @@
 
 use core::panic::PanicInfo;
 
-use constants::{SPENDING_KEY_GENERATOR};
+use constants::{ParserError, SPENDING_KEY_GENERATOR};
 mod constants;
 
-use jubjub::{Fr, AffinePoint, ExtendedPoint};
+use jubjub::{AffinePoint, ExtendedPoint, Fr};
 
-// ParserError should mirror parser_error_t from parser_common.
-// At the moment, just implement OK or Error
-#[repr(C)]
-#[derive(PartialEq, Debug)]
-pub enum ParserError {
-    ParserOk = 0,
-    ParserUnexpectedError = 5,
-}
+///////////////////////////////////////////////
+// Export DKG functions
+mod dkg;
+pub use dkg::privkey_to_identity;
+///////////////////////////////////////////////
 
 #[repr(C)]
 pub enum ConstantKey {
@@ -48,7 +45,11 @@ pub extern "C" fn from_bytes_wide(input: &[u8; 64], output: &mut [u8; 32]) -> Pa
 }
 
 #[no_mangle]
-pub extern "C" fn scalar_multiplication(input: &[u8; 32], key: ConstantKey, output: *mut [u8; 32]) -> ParserError {
+pub extern "C" fn scalar_multiplication(
+    input: &[u8; 32],
+    key: ConstantKey,
+    output: *mut [u8; 32],
+) -> ParserError {
     let key_point = match key {
         ConstantKey::SpendingKeyGenerator => constants::SPENDING_KEY_GENERATOR,
         ConstantKey::ProofGenerationKeyGenerator => constants::PROOF_GENERATION_KEY_GENERATOR,
@@ -67,8 +68,11 @@ pub extern "C" fn scalar_multiplication(input: &[u8; 32], key: ConstantKey, outp
 }
 
 #[no_mangle]
-pub extern "C" fn randomizeKey(key: &[u8; 32], randomness: &[u8; 32], output: &mut [u8; 32]) -> ParserError {
-
+pub extern "C" fn randomizeKey(
+    key: &[u8; 32],
+    randomness: &[u8; 32],
+    output: &mut [u8; 32],
+) -> ParserError {
     let mut skfr = Fr::from_bytes(key).unwrap();
     let alphafr = Fr::from_bytes(randomness).unwrap();
     skfr += alphafr;
@@ -78,7 +82,12 @@ pub extern "C" fn randomizeKey(key: &[u8; 32], randomness: &[u8; 32], output: &m
 }
 
 #[no_mangle]
-pub extern "C" fn compute_sbar( s:  &[u8; 32], r:  &[u8; 32], rsk:  &[u8; 32], sbar:  &mut [u8; 32]) -> ParserError{
+pub extern "C" fn compute_sbar(
+    s: &[u8; 32],
+    r: &[u8; 32],
+    rsk: &[u8; 32],
+    sbar: &mut [u8; 32],
+) -> ParserError {
     let s_point = Fr::from_bytes(s).unwrap();
     let r_point = Fr::from_bytes(r).unwrap();
     let rsk_point = Fr::from_bytes(rsk).unwrap();
@@ -88,7 +97,6 @@ pub extern "C" fn compute_sbar( s:  &[u8; 32], r:  &[u8; 32], rsk:  &[u8; 32], s
 
     ParserError::ParserOk
 }
-
 
 #[cfg(not(test))]
 #[panic_handler]

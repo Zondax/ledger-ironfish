@@ -23,15 +23,7 @@ extern "C" {
 #include <sigutils.h>
 #include <stdbool.h>
 
-#include "coin.h"
-#include "zxerror.h"
-
-extern uint32_t hdPath[HDPATH_LEN_DEFAULT];
-
-zxerr_t crypto_fillKeys(uint8_t *buffer, uint16_t bufferLen, key_kind_e requestedKey, uint16_t *cmdResponseLen);
-zxerr_t crypto_sign(const uint8_t publickeyRandomness[32], const uint8_t txnHash[32], uint8_t *output, uint16_t outputLen);
-
-zxerr_t crypto_fillIdentity(uint8_t *buffer, uint16_t bufferLen);
+void handleDKGGetIdentity(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx);
 
 #ifdef __cplusplus
 }
