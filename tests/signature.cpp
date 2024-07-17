@@ -13,10 +13,9 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
-#include <hexutils.h>
-
 #include "crypto_helper.h"
 #include "gmock/gmock.h"
+#include "hexutils.h"
 #include "keys_def.h"
 #include "parser.h"
 #include "rslib.h"
