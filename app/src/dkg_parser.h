@@ -54,7 +54,30 @@ typedef struct {
     uint64_t checksum;  // little endian
 } Round1PublicPackage_t;
 
+// typedef struct {
+//     Identifier_t identifier;
+//     VecScalar_t coefficients;
+//     VerifiableSecretSharingCommitment_t commitment;
+//     uint16_t minSigners;
+//     uint16_t maxSigners;
+// } Round1SecretPackage_t;
+
+// pub struct SecretPackage<C : Ciphersuite>{
+//     /// The identifier of the participant holding the secret.
+//     pub(crate) identifier : Identifier<C>,
+//     /// Coefficients of the temporary secret polynomial for the participant.
+//     /// These are (a_{i0}, ..., a_{i(t−1)})) which define the polynomial f_i(x)
+//     pub(crate) coefficients : Vec<Scalar<C>>,
+//     /// The public commitment for the participant (C_i)
+//     pub(crate) commitment : VerifiableSecretSharingCommitment<C>,
+//     /// The minimum number of signers.
+//     pub(crate) min_signers : u16,
+//     /// The total number of signers.
+//     pub(crate) max_signers : u16,
+// }
+
 parser_error_t parseRound1PublicPackage(parser_context_t *ctx, Round1PublicPackage_t *round1PublicPackage);
+parser_error_t parseRound1PrivatePackage(parser_context_t *ctx, Round1PublicPackage_t *round1PublicPackage);
 
 #ifdef __cplusplus
 }

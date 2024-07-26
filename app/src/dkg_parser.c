@@ -76,3 +76,14 @@ parser_error_t parseRound1PublicPackage(parser_context_t *ctx, Round1PublicPacka
 
     return parser_ok;
 }
+
+parser_error_t parseRound1PrivatePackage(parser_context_t *ctx, Round1PublicPackage_t *round1PublicPackage) {
+    if (ctx == NULL || round1PublicPackage == NULL) {
+        return parser_no_data;
+    }
+
+    MultiRecipientBlob_t multiRecipientBlob = {0};
+    CHECK_ERROR(parseMultiRecipientBlob(ctx, &multiRecipientBlob));
+
+    return parser_ok;
+}

@@ -59,8 +59,22 @@ TEST(DKG, Round2) {
     uint8_t serializedPublicPackage[500] = {0};
     const uint16_t publicPackageLen =
         parseHexString(serializedPublicPackage, sizeof(serializedPublicPackage), round1PublicPackage.c_str());
-    parser_context_t ctx = {.buffer = serializedPublicPackage, .bufferLen = publicPackageLen, .offset = 0};
+    parser_context_t ctx_public = {.buffer = serializedPublicPackage, .bufferLen = publicPackageLen, .offset = 0};
 
     Round1PublicPackage_t publicPackage = {0};
-    ASSERT_EQ(parseRound1PublicPackage(&ctx, &publicPackage), parser_ok);
+    ASSERT_EQ(parseRound1PublicPackage(&ctx_public, &publicPackage), parser_ok);
+
+    const string round1SecretPackage =
+        "ad2913005e787057d2aeee92c4f0d7631f8baedafe0309fd4f97e3b5fdf2d07501000000331e7812203366d0f811c1c1d3da0109d82122eb1bb"
+        "fc087c06577b7a7965c73bc0000007ef136f3fcc97ea14b2145750f62143916bc9773ad79393d9dd99c8343ff3cf97e1b6682d1a70a1fcebb45"
+        "8d784a8bf3a2d2a205d4f6d8f77f3daea6cd9b4a850b61bdf076a91b980a9fee8ff214cb869fcab312617a03d7350579636c16a7461f92e3a0c"
+        "565bafbd53ccf08cff274e842195f5660f90392d817585102f75a7bd0577510736808e8c76ea520a4690c8895485a2d108086702b6eaf074438"
+        "8bf481338232dc2644e07f7414e8e3d8083842f39652b2e3e23c05657b16";
+
+    uint8_t serializedSecretPackage[500] = {0};
+    const uint16_t secretPackageLen =
+        parseHexString(serializedSecretPackage, sizeof(serializedSecretPackage), round1SecretPackage.c_str());
+    parser_context_t ctx_secret = {.buffer = serializedSecretPackage, .bufferLen = secretPackageLen, .offset = 0};
+
+    ASSERT_EQ(parseRound1PublicPackage(&ctx_secret, &publicPackage), parser_ok);
 }

@@ -41,6 +41,30 @@ describe('Standard', function () {
     }
   })
 
+  test.only.each(models)('get app info', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new IronfishApp(sim.getTransport())
+      // const resp = await app.getVersion()
+      const resp = await app.appInfo();
+
+      console.log(resp)
+
+      expect(resp.returnCode).toEqual(0x9000)
+
+      const resp2 = await app.deviceInfo()
+      console.log(resp2)
+      // expect(resp.errorMessage).toEqual('No errors')
+      // expect(resp).toHaveProperty('testMode')
+      // expect(resp).toHaveProperty('major')
+      // expect(resp).toHaveProperty('minor')
+      // expect(resp).toHaveProperty('patch')
+    } finally {
+      await sim.close()
+    }
+  })
+
   test.concurrent.each(models)('get app version', async function (m) {
     const sim = new Zemu(m.path)
     try {

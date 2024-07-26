@@ -27,7 +27,7 @@ include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.installer_script
 include $(BOLOS_SDK)/Makefile.defines
 
 $(info ************ TARGET_NAME  = [$(TARGET_NAME)])
-PRODUCTION_BUILD ?= 0
+PRODUCTION_BUILD ?= 1
 $(info ************ PRODUCTION_BUILD  = [$(if $(filter 1,$(PRODUCTION_BUILD)),PRODUCTION BUILD,INTERNAL USE)])
 DEFINES += PRODUCTION_BUILD=$(PRODUCTION_BUILD)
 
