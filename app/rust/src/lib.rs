@@ -28,6 +28,7 @@ use embedded_alloc::Heap;
 use critical_section::RawRestoreState;
 use core::mem::MaybeUninit;
 
+// TODO Adjust this number to a reasonable value, as 12500 was a value provided by Ironfish from their tests.
 const HEAP_SIZE: usize = 12500;
 
 #[global_allocator]

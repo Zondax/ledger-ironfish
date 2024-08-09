@@ -175,10 +175,6 @@ void handleTest(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
 void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     volatile uint16_t sw = 0;
 
-    if(!heap_initialized){
-        heap_initialized = true;
-        heap_init();
-    }
     BEGIN_TRY {
         TRY {
             if (G_io_apdu_buffer[OFFSET_CLA] != CLA) {
@@ -187,6 +183,11 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
 
             if (rx < APDU_MIN_LENGTH) {
                 THROW(APDU_CODE_WRONG_LENGTH);
+            }
+
+            if(!heap_initialized){
+                heap_initialized = true;
+                heap_init();
             }
 
             switch (G_io_apdu_buffer[OFFSET_INS]) {
