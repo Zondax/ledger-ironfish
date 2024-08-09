@@ -17,6 +17,10 @@ jubjub = { version = "0.10.0", default-features = false }
 embedded-alloc = { version = "0.5.1" }
 critical-section = { version = "1.1.2" }
 
+bolos = { path = "../../deps/ledger-rust/bolos" }
+bolos-common = { path = "../../deps/ledger-rust/bolos-common" }
+zemu-sys = { path = "../../deps/ledger-rust/zemu" }
+
 # From https://github.com/iron-fish/ironfish-frost-ledger/tree/ad03ed83b5f2ebf4f494ae260fa1cf81c4599d58
 ironfish-frost = { git = "https://github.com/iron-fish/ironfish-frost.git", branch = "no-std", default-features = false, features = ["dkg"]}
 getrandom = { version = "0.2", features = ["custom"] }

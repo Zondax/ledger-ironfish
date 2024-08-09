@@ -34,6 +34,9 @@ const HEAP_SIZE: usize = 12300;
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
 
+#[lazy_static]
+static mut BUFFER: [u8;12500] = [0u8;12500];
+
 struct CriticalSection;
 critical_section::set_impl!(CriticalSection);
 
@@ -65,11 +68,9 @@ pub enum ConstantKey {
 /// This method is called just before [sample_main].
 #[no_mangle]
 pub extern "C" fn heap_init() -> ParserError {
-    static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
-    unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) };
+    unsafe { HEAP.init(BUFFER.as_mut_ptr() as usize, 12500) };
     ParserError::ParserOk
 }
-
 #[no_mangle]
 pub extern "C" fn from_bytes_wide(input: &[u8; 64], output: &mut [u8; 32]) -> ParserError {
     let result = Fr::from_bytes_wide(input).to_bytes();
