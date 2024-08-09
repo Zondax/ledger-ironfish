@@ -16,6 +16,9 @@ parser_error_t randomizeKey(const uint8_t key[KEY_LENGTH], const uint8_t randomn
 parser_error_t compute_sbar(const uint8_t s[KEY_LENGTH], const uint8_t r[KEY_LENGTH], const uint8_t rsk[KEY_LENGTH],
                             uint8_t sbar[32]);
 
+// Required to initialize a heap for alloc into the stack memory (necessary for alloc feature on embedded devices)
+void heap_init();
+
 #ifdef __cplusplus
 }
 #endif

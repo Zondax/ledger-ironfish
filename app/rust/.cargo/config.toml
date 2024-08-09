@@ -8,6 +8,11 @@ rustflags = [
    "-C", "link-arg=-Tlink.ld",
    "-C", "inline-threshold=0"
 ]
+
+
+# From https://github.com/iron-fish/ironfish-frost-ledger/tree/ad03ed83b5f2ebf4f494ae260fa1cf81c4599d58
+# alloc and compiler-builtins-mem come from this example to use ironfish-frost on ledger devices
 [unstable]
-build-std=["core"]
-build-std-features=["panic_immediate_abort"]
+build-std=["core", "alloc"]
+build-std-features=["panic_immediate_abort", "compiler-builtins-mem"]
+

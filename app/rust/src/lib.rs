@@ -24,6 +24,24 @@ mod constants;
 
 use jubjub::{Fr, AffinePoint, ExtendedPoint};
 
+use embedded_alloc::Heap;
+use critical_section::RawRestoreState;
+use core::mem::MaybeUninit;
+
+const HEAP_SIZE: usize = 12500;
+
+#[global_allocator]
+static HEAP: Heap = Heap::empty();
+
+struct CriticalSection;
+critical_section::set_impl!(CriticalSection);
+
+/// Default empty implementation as we don't have concurrency.
+unsafe impl critical_section::Impl for CriticalSection {
+    unsafe fn acquire() -> RawRestoreState {}
+    unsafe fn release(_restore_state: RawRestoreState) {}
+}
+
 // ParserError should mirror parser_error_t from parser_common.
 // At the moment, just implement OK or Error
 #[repr(C)]
@@ -38,6 +56,16 @@ pub enum ConstantKey {
     SpendingKeyGenerator,
     ProofGenerationKeyGenerator,
     PublicKeyGenerator,
+}
+
+/// Initializes the heap memory for the global allocator.
+///
+/// The heap is stored in the stack, and has a fixed size.
+/// This method is called just before [sample_main].
+#[no_mangle]
+extern "C" fn heap_init() {
+    static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
+    unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
 }
 
 #[no_mangle]
