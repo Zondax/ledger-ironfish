@@ -29,7 +29,7 @@ use critical_section::RawRestoreState;
 use core::mem::MaybeUninit;
 
 // TODO Adjust this number to a reasonable value, as 12500 was a value provided by Ironfish from their tests.
-const HEAP_SIZE: usize = 12500;
+const HEAP_SIZE: usize = 1000;
 
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
