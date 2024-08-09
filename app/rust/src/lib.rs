@@ -29,7 +29,7 @@ use critical_section::RawRestoreState;
 use core::mem::MaybeUninit;
 
 // TODO Adjust this number to a reasonable value, as 12500 was a value provided by Ironfish from their tests.
-const HEAP_SIZE: usize = 1000;
+const HEAP_SIZE: usize = 12300;
 
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
@@ -64,9 +64,10 @@ pub enum ConstantKey {
 /// The heap is stored in the stack, and has a fixed size.
 /// This method is called just before [sample_main].
 #[no_mangle]
-extern "C" fn heap_init() {
+pub extern "C" fn heap_init() -> ParserError {
     static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
-    unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
+    unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) };
+    ParserError::ParserOk
 }
 
 #[no_mangle]

@@ -17,7 +17,7 @@ parser_error_t compute_sbar(const uint8_t s[KEY_LENGTH], const uint8_t r[KEY_LEN
                             uint8_t sbar[32]);
 
 // Required to initialize a heap for alloc into the stack memory (necessary for alloc feature on embedded devices)
-void heap_init();
+parser_error_t heap_init();
 
 #ifdef __cplusplus
 }
