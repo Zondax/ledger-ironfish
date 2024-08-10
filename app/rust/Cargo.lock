@@ -1323,14 +1323,12 @@ name = "rslib"
 version = "0.1.0"
 dependencies = [
  "bolos",
- "bolos-common",
  "critical-section",
  "embedded-alloc",
  "getrandom 0.2.15",
  "ironfish-frost",
  "jubjub",
  "panic-halt",
- "zemu-sys",
 ]
 
 [[package]]
