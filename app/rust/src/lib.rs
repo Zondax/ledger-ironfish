@@ -28,7 +28,7 @@ use embedded_alloc::Heap;
 use critical_section::RawRestoreState;
 use core::mem::MaybeUninit;
 
-use bolos::{lazy_static};
+use bolos::{lazy_static, pic::PIC};
 
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
