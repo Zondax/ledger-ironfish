@@ -31,7 +31,10 @@ use core::mem::MaybeUninit;
 
 use bolos::{lazy_static, pic::PIC};
 
+// TODO increase this whenever dkg features are set as rust feature. Nano S device won't have this feature enabled
+// TODO For now, if this is bigger, nano s build will fail.
 const HEAP_SIZE :usize = 100;
+
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
 
