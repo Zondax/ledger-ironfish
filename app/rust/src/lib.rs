@@ -21,82 +21,27 @@ use core::panic::PanicInfo;
 
 use constants::SPENDING_KEY_GENERATOR;
 mod constants;
+mod allocator;
 
 use jubjub::{AffinePoint, ExtendedPoint, Fr};
 
 use core::mem::MaybeUninit;
 use critical_section::RawRestoreState;
-// use embedded_alloc::Heap;
 use core::alloc::{GlobalAlloc, Layout};
 use core::cell::UnsafeCell;
 use core::ptr::null_mut;
 use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use allocator::{MyAlloc,BumpAllocator};
 
 use bolos::{lazy_static, pic::PIC};
 
+const HEAP_SIZE: usize = 12500;
 #[lazy_static]
-static mut BUFFER: [u8; 2048] = [0u8; 2048];
-
-struct MyAlloc(PIC<BumpAllocator>);
+static mut BUFFER: [u8; HEAP_SIZE] = [0u8; HEAP_SIZE];
 
 #[global_allocator]
 static mut ALLOCATOR: MyAlloc = MyAlloc(PIC::new(BumpAllocator::new()));
 
-pub struct BumpAllocator {
-    heap: AtomicUsize,
-    size: AtomicUsize,
-    next: UnsafeCell<usize>,
-    initialized: AtomicBool,
-}
-
-unsafe impl Sync for BumpAllocator {}
-unsafe impl Sync for MyAlloc {}
-
-impl BumpAllocator {
-    const fn new() -> Self {
-        Self {
-            heap: AtomicUsize::new(0),
-            size: AtomicUsize::new(0),
-            next: UnsafeCell::new(0),
-            initialized: AtomicBool::new(false),
-        }
-    }
-
-    pub fn init(&self, start: *const u8, size: usize) {
-        self.heap.store(start as usize, Ordering::SeqCst);
-        self.size.store(size, Ordering::SeqCst);
-        unsafe { *self.next.get() = 0 };
-        self.initialized.store(true, Ordering::SeqCst);
-    }
-}
-
-unsafe impl GlobalAlloc for MyAlloc {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        // pic to get back the runtime pointer
-        // with this we try to operate on a well-formed pointer
-        let allocator = self.0.get_ref();
-        if !allocator.initialized.load(Ordering::SeqCst) {
-            return null_mut();
-        }
-
-        let size = layout.size();
-        let align = layout.align();
-
-        let mut next = *allocator.next.get();
-        next = (next + align - 1) & !(align - 1);
-
-        if next + size > allocator.size.load(Ordering::SeqCst) {
-            null_mut()
-        } else {
-            let heap_start = allocator.heap.load(Ordering::SeqCst) as *mut u8;
-            let alloc = heap_start.add(next);
-            *allocator.next.get() = next + size;
-            alloc
-        }
-    }
-
-    unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {}
-}
 
 struct CriticalSection;
 critical_section::set_impl!(CriticalSection);
@@ -126,12 +71,11 @@ pub enum ConstantKey {
 /// Initializes the heap memory for the global allocator.
 ///
 /// The heap is stored in the stack, and has a fixed size.
-/// This method is called just before [sample_main].
 #[no_mangle]
 pub extern "C" fn heap_init() -> ParserError {
     unsafe {
         let allocator = ALLOCATOR.0.get_mut();
-        allocator.init(BUFFER.as_ptr(), 12500);
+        allocator.init(BUFFER.as_ptr(), HEAP_SIZE);
     }
     ParserError::ParserOk
 }
