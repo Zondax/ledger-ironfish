@@ -41,3 +41,11 @@ test_all:
 	PRODUCTION_BUILD=1 make
 	make zemu_install
 	make zemu_test
+
+# Overrides all to remove nano s build process as the app does not fit
+all:
+	@$(MAKE) clean
+	@$(MAKE) buildX
+	@$(MAKE) buildS2
+	@$(MAKE) buildST
+	@$(MAKE) buildFL
