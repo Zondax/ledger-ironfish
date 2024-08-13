@@ -61,6 +61,15 @@ include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.devices
 
 $(info TARGET_NAME  = [$(TARGET_NAME)])
 $(info ICONNAME  = [$(ICONNAME)])
+ifneq ($(TARGET_NAME), TARGET_NANOS)
+RUST_FEATURES += --features "dkg-support"
+endif
+
+ifeq ($(TARGET_NAME),TARGET_NANOS)
+	RUST_FEATURES += --features "target-nanos,dkg-support"
+else
+	RUST_FEATURES += --features "dkg-support"
+endif
 
 ifndef ICONNAME
 $(error ICONNAME is not set)
@@ -83,7 +92,7 @@ RUST_TARGET:=thumbv6m-none-eabi
 
 .PHONY: rust
 rust:
-	cd rust && RUSTC_BOOTSTRAP=1 CARGO_HOME="$(CURDIR)/rust/.cargo" TARGET_NAME=$(TARGET_NAME) cargo build --target $(RUST_TARGET) --release
+	cd rust && RUSTC_BOOTSTRAP=1 CARGO_HOME="$(CURDIR)/rust/.cargo" TARGET_NAME=$(TARGET_NAME) cargo build --target $(RUST_TARGET) --release --no-default-features $(RUST_FEATURES)
 
 .PHONY: rust_clean
 rust_clean:
