@@ -19,7 +19,7 @@ jobs:
         sdk: ["$NANOS_SDK", "$NANOX_SDK", "$NANOSP_SDK", "$STAX_SDK"]
     runs-on: ${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder-legacy:latest
+      image: zondax/ledger-app-builder:ledger-ec93499de7f17076ee90caaca5953fdb9d3daf6c
 
     steps:
       - name: Clone
