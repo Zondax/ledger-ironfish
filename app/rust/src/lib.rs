@@ -19,22 +19,82 @@
 
 use core::panic::PanicInfo;
 
-use constants::{SPENDING_KEY_GENERATOR};
+use constants::SPENDING_KEY_GENERATOR;
 mod constants;
 
-use jubjub::{Fr, AffinePoint, ExtendedPoint};
+use jubjub::{AffinePoint, ExtendedPoint, Fr};
 
-use embedded_alloc::Heap;
-use critical_section::RawRestoreState;
 use core::mem::MaybeUninit;
+use critical_section::RawRestoreState;
+// use embedded_alloc::Heap;
+use core::alloc::{GlobalAlloc, Layout};
+use core::cell::UnsafeCell;
+use core::ptr::null_mut;
+use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use bolos::{lazy_static, pic::PIC};
 
-#[global_allocator]
-static HEAP: Heap = Heap::empty();
-
 #[lazy_static]
-static mut BUFFER: [u8;12500] = [0u8;12500];
+static mut BUFFER: [u8; 2048] = [0u8; 2048];
+
+struct MyAlloc(PIC<BumpAllocator>);
+
+#[global_allocator]
+static mut ALLOCATOR: MyAlloc = MyAlloc(PIC::new(BumpAllocator::new()));
+
+pub struct BumpAllocator {
+    heap: AtomicUsize,
+    size: AtomicUsize,
+    next: UnsafeCell<usize>,
+    initialized: AtomicBool,
+}
+
+unsafe impl Sync for BumpAllocator {}
+unsafe impl Sync for MyAlloc {}
+
+impl BumpAllocator {
+    const fn new() -> Self {
+        Self {
+            heap: AtomicUsize::new(0),
+            size: AtomicUsize::new(0),
+            next: UnsafeCell::new(0),
+            initialized: AtomicBool::new(false),
+        }
+    }
+
+    pub fn init(&self, start: *const u8, size: usize) {
+        self.heap.store(start as usize, Ordering::SeqCst);
+        self.size.store(size, Ordering::SeqCst);
+        unsafe { *self.next.get() = 0 };
+        self.initialized.store(true, Ordering::SeqCst);
+    }
+}
+
+unsafe impl GlobalAlloc for MyAlloc {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        let allocator = self.0.get_ref();
+        if !allocator.initialized.load(Ordering::SeqCst) {
+            return null_mut();
+        }
+
+        let size = layout.size();
+        let align = layout.align();
+
+        let mut next = *allocator.next.get();
+        next = (next + align - 1) & !(align - 1);
+
+        if next + size > allocator.size.load(Ordering::SeqCst) {
+            null_mut()
+        } else {
+            let heap_start = allocator.heap.load(Ordering::SeqCst) as *mut u8;
+            let alloc = heap_start.add(next);
+            *allocator.next.get() = next + size;
+            alloc
+        }
+    }
+
+    unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {}
+}
 
 struct CriticalSection;
 critical_section::set_impl!(CriticalSection);
@@ -67,9 +127,13 @@ pub enum ConstantKey {
 /// This method is called just before [sample_main].
 #[no_mangle]
 pub extern "C" fn heap_init() -> ParserError {
-    unsafe { HEAP.init(BUFFER.as_mut_ptr() as usize, 12500) };
+    unsafe {
+        let allocator = ALLOCATOR.0.get_mut();
+        allocator.init(BUFFER.as_ptr(), 12500);
+    }
     ParserError::ParserOk
 }
+
 #[no_mangle]
 pub extern "C" fn from_bytes_wide(input: &[u8; 64], output: &mut [u8; 32]) -> ParserError {
     let result = Fr::from_bytes_wide(input).to_bytes();
@@ -78,7 +142,11 @@ pub extern "C" fn from_bytes_wide(input: &[u8; 64], output: &mut [u8; 32]) -> Pa
 }
 
 #[no_mangle]
-pub extern "C" fn scalar_multiplication(input: &[u8; 32], key: ConstantKey, output: *mut [u8; 32]) -> ParserError {
+pub extern "C" fn scalar_multiplication(
+    input: &[u8; 32],
+    key: ConstantKey,
+    output: *mut [u8; 32],
+) -> ParserError {
     let key_point = match key {
         ConstantKey::SpendingKeyGenerator => constants::SPENDING_KEY_GENERATOR,
         ConstantKey::ProofGenerationKeyGenerator => constants::PROOF_GENERATION_KEY_GENERATOR,
@@ -97,8 +165,11 @@ pub extern "C" fn scalar_multiplication(input: &[u8; 32], key: ConstantKey, outp
 }
 
 #[no_mangle]
-pub extern "C" fn randomizeKey(key: &[u8; 32], randomness: &[u8; 32], output: &mut [u8; 32]) -> ParserError {
-
+pub extern "C" fn randomizeKey(
+    key: &[u8; 32],
+    randomness: &[u8; 32],
+    output: &mut [u8; 32],
+) -> ParserError {
     let mut skfr = Fr::from_bytes(key).unwrap();
     let alphafr = Fr::from_bytes(randomness).unwrap();
     skfr += alphafr;
@@ -108,7 +179,12 @@ pub extern "C" fn randomizeKey(key: &[u8; 32], randomness: &[u8; 32], output: &m
 }
 
 #[no_mangle]
-pub extern "C" fn compute_sbar( s:  &[u8; 32], r:  &[u8; 32], rsk:  &[u8; 32], sbar:  &mut [u8; 32]) -> ParserError{
+pub extern "C" fn compute_sbar(
+    s: &[u8; 32],
+    r: &[u8; 32],
+    rsk: &[u8; 32],
+    sbar: &mut [u8; 32],
+) -> ParserError {
     let s_point = Fr::from_bytes(s).unwrap();
     let r_point = Fr::from_bytes(r).unwrap();
     let rsk_point = Fr::from_bytes(rsk).unwrap();
@@ -118,7 +194,6 @@ pub extern "C" fn compute_sbar( s:  &[u8; 32], r:  &[u8; 32], rsk:  &[u8; 32], s
 
     ParserError::ParserOk
 }
-
 
 #[cfg(not(test))]
 #[panic_handler]
