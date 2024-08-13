@@ -48,4 +48,3 @@ all:
 	@$(MAKE) buildX
 	@$(MAKE) buildS2
 	@$(MAKE) buildST
-	@$(MAKE) buildFL
