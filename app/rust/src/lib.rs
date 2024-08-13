@@ -21,18 +21,25 @@ use core::panic::PanicInfo;
 
 use constants::{SPENDING_KEY_GENERATOR};
 mod constants;
+mod heap;
 
 use jubjub::{Fr, AffinePoint, ExtendedPoint};
 
-use embedded_alloc::Heap;
+use heap::Heap;
 use critical_section::RawRestoreState;
 use core::mem::MaybeUninit;
 
-// TODO Adjust this number to a reasonable value, as 12500 was a value provided by Ironfish from their tests.
-const HEAP_SIZE: usize = 12300;
+use bolos::{lazy_static, pic::PIC};
+
+// TODO increase this whenever dkg features are set as rust feature. Nano S device won't have this feature enabled
+// TODO For now, if this is bigger, nano s build will fail.
+const HEAP_SIZE :usize = 100;
 
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
+
+#[lazy_static]
+static mut BUFFER: [u8;HEAP_SIZE] = [0u8;HEAP_SIZE];
 
 struct CriticalSection;
 critical_section::set_impl!(CriticalSection);
@@ -65,11 +72,9 @@ pub enum ConstantKey {
 /// This method is called just before [sample_main].
 #[no_mangle]
 pub extern "C" fn heap_init() -> ParserError {
-    static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
-    unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) };
+    unsafe { HEAP.init(BUFFER.as_mut_ptr() as usize, HEAP_SIZE) };
     ParserError::ParserOk
 }
-
 #[no_mangle]
 pub extern "C" fn from_bytes_wide(input: &[u8; 64], output: &mut [u8; 32]) -> ParserError {
     let result = Fr::from_bytes_wide(input).to_bytes();

@@ -10,3 +10,6 @@
 [submodule "js"]
 	path = js
 	url = https://github.com/Zondax/ledger-ironfish-js
+[submodule "deps/ledger-rust"]
+	path = deps/ledger-rust
+	url = https://github.com/Zondax/ledger-rust
