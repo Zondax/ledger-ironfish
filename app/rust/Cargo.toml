@@ -21,7 +21,9 @@ critical-section = { version = "1.1.2" }
 bolos = { path = "../../deps/ledger-rust/bolos" }
 
 # Taken from https://github.com/iron-fish/ironfish-frost-ledger/tree/ad03ed83b5f2ebf4f494ae260fa1cf81c4599d58
-ironfish-frost = { git = "https://github.com/iron-fish/ironfish-frost.git", branch = "no-std", default-features = false, features = ["dkg"]}
+ironfish-frost = { git = "https://github.com/iron-fish/ironfish-frost.git", branch = "no-std", default-features = false, features = [
+    "dkg",
+] }
 getrandom = { version = "0.2", features = ["custom"] }
 
 [target.thumbv6m-none-eabi.dev-dependencies]
@@ -37,7 +39,7 @@ overflow-checks = true
 [profile.dev]
 lto = "fat"
 codegen-units = 1
-debug=true
+debug = true
 opt-level = 3
 panic = "abort"
 
@@ -45,6 +47,7 @@ panic = "abort"
 default = []
 # use when compiling this crate as a lib for the cpp_tests suite
 cpp_tests = []
+custom_alloc = []
 
 
 # From https://github.com/iron-fish/ironfish-frost-ledger/tree/ad03ed83b5f2ebf4f494ae260fa1cf81c4599d58
@@ -52,3 +55,4 @@ cpp_tests = []
 # solve why this is happening rather than using modified radium
 [patch.crates-io]
 radium = { git = "https://github.com/iron-fish/radium", rev = "674c8faf1e74f931a58671f70586e6435353e9b6" }
+
