@@ -125,7 +125,7 @@ pub extern "C" fn compute_sbar( s:  &[u8; 32], r:  &[u8; 32], rsk:  &[u8; 32], s
 }
 
 
-#[cfg(not(test))]
+#[cfg(not(feature = "cpp_tests"))]
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
@@ -133,7 +133,7 @@ fn panic(_info: &PanicInfo) -> ! {
 
 fn debug(_msg: &str) {}
 
-#[cfg(test)]
+#[cfg(feature = "cpp_tests")]
 mod tests {
     use super::*;
     extern crate std;
