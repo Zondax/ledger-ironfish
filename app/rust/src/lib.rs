@@ -72,6 +72,8 @@ impl BumpAllocator {
 
 unsafe impl GlobalAlloc for MyAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        // pic to get back the runtime pointer
+        // with this we try to operate on a well-formed pointer
         let allocator = self.0.get_ref();
         if !allocator.initialized.load(Ordering::SeqCst) {
             return null_mut();
