@@ -29,8 +29,10 @@
 #include "view.h"
 #include "view_internal.h"
 #include "zxmacros.h"
+#include "rslib.h"
 
 static bool tx_initialized = false;
+static bool heap_initialized = false;
 
 void extractHDPath(uint32_t rx, uint32_t offset) {
     tx_initialized = false;
@@ -181,6 +183,11 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
 
             if (rx < APDU_MIN_LENGTH) {
                 THROW(APDU_CODE_WRONG_LENGTH);
+            }
+
+            if(!heap_initialized){
+                heap_initialized = true;
+                heap_init();
             }
 
             switch (G_io_apdu_buffer[OFFSET_INS]) {

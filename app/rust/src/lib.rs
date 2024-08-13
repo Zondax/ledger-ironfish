@@ -21,8 +21,34 @@ use core::panic::PanicInfo;
 
 use constants::{SPENDING_KEY_GENERATOR};
 mod constants;
+mod heap;
 
 use jubjub::{Fr, AffinePoint, ExtendedPoint};
+
+use heap::Heap;
+use critical_section::RawRestoreState;
+use core::mem::MaybeUninit;
+
+use bolos::{lazy_static, pic::PIC};
+
+// TODO increase this whenever dkg features are set as rust feature. Nano S device won't have this feature enabled
+// TODO For now, if this is bigger, nano s build will fail.
+const HEAP_SIZE :usize = 100;
+
+#[global_allocator]
+static HEAP: Heap = Heap::empty();
+
+#[lazy_static]
+static mut BUFFER: [u8;HEAP_SIZE] = [0u8;HEAP_SIZE];
+
+struct CriticalSection;
+critical_section::set_impl!(CriticalSection);
+
+/// Default empty implementation as we don't have concurrency.
+unsafe impl critical_section::Impl for CriticalSection {
+    unsafe fn acquire() -> RawRestoreState {}
+    unsafe fn release(_restore_state: RawRestoreState) {}
+}
 
 // ParserError should mirror parser_error_t from parser_common.
 // At the moment, just implement OK or Error
@@ -40,6 +66,15 @@ pub enum ConstantKey {
     PublicKeyGenerator,
 }
 
+/// Initializes the heap memory for the global allocator.
+///
+/// The heap is stored in the stack, and has a fixed size.
+/// This method is called just before [sample_main].
+#[no_mangle]
+pub extern "C" fn heap_init() -> ParserError {
+    unsafe { HEAP.init(BUFFER.as_mut_ptr() as usize, HEAP_SIZE) };
+    ParserError::ParserOk
+}
 #[no_mangle]
 pub extern "C" fn from_bytes_wide(input: &[u8; 64], output: &mut [u8; 32]) -> ParserError {
     let result = Fr::from_bytes_wide(input).to_bytes();
@@ -90,7 +125,7 @@ pub extern "C" fn compute_sbar( s:  &[u8; 32], r:  &[u8; 32], rsk:  &[u8; 32], s
 }
 
 
-#[cfg(not(test))]
+#[cfg(not(feature = "cpp_tests"))]
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
@@ -98,7 +133,7 @@ fn panic(_info: &PanicInfo) -> ! {
 
 fn debug(_msg: &str) {}
 
-#[cfg(test)]
+#[cfg(feature = "cpp_tests")]
 mod tests {
     use super::*;
     extern crate std;

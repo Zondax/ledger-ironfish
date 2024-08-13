@@ -10,7 +10,9 @@ const APP_PATH_SP = resolve('../app/output/app_s2.elf')
 const APP_PATH_ST = resolve('../app/output/app_stax.elf')
 
 export const models: IDeviceModel[] = [
-  // { name: 'nanos', prefix: 'S', path: APP_PATH_S },
+  // TODO investigate why nano s is disabled
+  // On blind signing tests, it fails with "19:59:04.695:seproxyhal: received tag SE_POWER_OFF, exiting" when approving the tx (signing)
+  //{ name: 'nanos', prefix: 'S', path: APP_PATH_S },
   { name: 'nanox', prefix: 'X', path: APP_PATH_X },
   { name: 'nanosp', prefix: 'SP', path: APP_PATH_SP },
   { name: 'stax', prefix: 'ST', path: APP_PATH_ST },

@@ -41,3 +41,10 @@ test_all:
 	PRODUCTION_BUILD=1 make
 	make zemu_install
 	make zemu_test
+
+all:
+	@$(MAKE) clean
+	@$(MAKE) buildS
+	@$(MAKE) buildX
+	@$(MAKE) buildS2
+	@$(MAKE) buildST
