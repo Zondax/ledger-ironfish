@@ -35,7 +35,7 @@ use allocator::{MyAlloc,BumpAllocator};
 
 use bolos::{lazy_static, pic::PIC};
 
-const HEAP_SIZE: usize = 12500;
+const HEAP_SIZE: usize = 8196;
 #[lazy_static]
 static mut BUFFER: [u8; HEAP_SIZE] = [0u8; HEAP_SIZE];
 
