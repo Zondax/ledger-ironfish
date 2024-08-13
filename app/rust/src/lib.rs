@@ -21,20 +21,22 @@ use core::panic::PanicInfo;
 
 use constants::{SPENDING_KEY_GENERATOR};
 mod constants;
+mod heap;
 
 use jubjub::{Fr, AffinePoint, ExtendedPoint};
 
-use embedded_alloc::Heap;
+use heap::Heap;
 use critical_section::RawRestoreState;
 use core::mem::MaybeUninit;
 
 use bolos::{lazy_static, pic::PIC};
 
+const HEAP_SIZE :usize = 100;
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
 
 #[lazy_static]
-static mut BUFFER: [u8;12500] = [0u8;12500];
+static mut BUFFER: [u8;HEAP_SIZE] = [0u8;HEAP_SIZE];
 
 struct CriticalSection;
 critical_section::set_impl!(CriticalSection);
@@ -67,7 +69,7 @@ pub enum ConstantKey {
 /// This method is called just before [sample_main].
 #[no_mangle]
 pub extern "C" fn heap_init() -> ParserError {
-    unsafe { HEAP.init(BUFFER.as_mut_ptr() as usize, 12500) };
+    unsafe { HEAP.init(BUFFER.as_mut_ptr() as usize, HEAP_SIZE) };
     ParserError::ParserOk
 }
 #[no_mangle]
