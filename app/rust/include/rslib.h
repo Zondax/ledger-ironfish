@@ -19,6 +19,14 @@ parser_error_t compute_sbar(const uint8_t s[KEY_LENGTH], const uint8_t r[KEY_LEN
 // Use to generate a new DKG identity from a private key
 parser_error_t privkey_to_identity(const uint8_t privkey_1[KEY_LENGTH], const uint8_t privkey_2[KEY_LENGTH], uint8_t identity[IDENTITY_LEN]);
 
+// Use to run the DKG - round 1
+parser_error_t rs_dkg_round_1(const uint8_t self_identity_bytes[IDENTITY_LEN],
+                              const uint8_t identity_1_bytes[IDENTITY_LEN],
+                              const uint8_t identity_2_bytes[IDENTITY_LEN],
+                              const uint16_t min_signers,
+                              uint8_t output[512]);
+
+
 // Required to initialize a heap for alloc into the stack memory (necessary for alloc feature on embedded devices)
 parser_error_t heap_init();
 
