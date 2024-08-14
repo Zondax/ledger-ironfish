@@ -19,27 +19,28 @@
 
 use core::panic::PanicInfo;
 
-use constants::{SPENDING_KEY_GENERATOR};
+use constants::SPENDING_KEY_GENERATOR;
 mod constants;
 mod heap;
 
-use jubjub::{Fr, AffinePoint, ExtendedPoint};
+use jubjub::{AffinePoint, ExtendedPoint, Fr};
 
-use heap::Heap;
-use critical_section::RawRestoreState;
 use core::mem::MaybeUninit;
+use critical_section::RawRestoreState;
+use heap::Heap;
 
 use bolos::{lazy_static, pic::PIC};
 
-// TODO increase this whenever dkg features are set as rust feature. Nano S device won't have this feature enabled
-// TODO For now, if this is bigger, nano s build will fail.
-const HEAP_SIZE :usize = 100;
+#[cfg(not(feature = "target-nanos"))]
+const HEAP_SIZE: usize = 8 * 1024;
+#[cfg(feature = "target-nanos")]
+const HEAP_SIZE: usize = 128;
 
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
 
 #[lazy_static]
-static mut BUFFER: [u8;HEAP_SIZE] = [0u8;HEAP_SIZE];
+static mut BUFFER: [u8; HEAP_SIZE] = [0u8; HEAP_SIZE];
 
 struct CriticalSection;
 critical_section::set_impl!(CriticalSection);
@@ -83,7 +84,11 @@ pub extern "C" fn from_bytes_wide(input: &[u8; 64], output: &mut [u8; 32]) -> Pa
 }
 
 #[no_mangle]
-pub extern "C" fn scalar_multiplication(input: &[u8; 32], key: ConstantKey, output: *mut [u8; 32]) -> ParserError {
+pub extern "C" fn scalar_multiplication(
+    input: &[u8; 32],
+    key: ConstantKey,
+    output: *mut [u8; 32],
+) -> ParserError {
     let key_point = match key {
         ConstantKey::SpendingKeyGenerator => constants::SPENDING_KEY_GENERATOR,
         ConstantKey::ProofGenerationKeyGenerator => constants::PROOF_GENERATION_KEY_GENERATOR,
@@ -102,8 +107,11 @@ pub extern "C" fn scalar_multiplication(input: &[u8; 32], key: ConstantKey, outp
 }
 
 #[no_mangle]
-pub extern "C" fn randomizeKey(key: &[u8; 32], randomness: &[u8; 32], output: &mut [u8; 32]) -> ParserError {
-
+pub extern "C" fn randomizeKey(
+    key: &[u8; 32],
+    randomness: &[u8; 32],
+    output: &mut [u8; 32],
+) -> ParserError {
     let mut skfr = Fr::from_bytes(key).unwrap();
     let alphafr = Fr::from_bytes(randomness).unwrap();
     skfr += alphafr;
@@ -113,7 +121,12 @@ pub extern "C" fn randomizeKey(key: &[u8; 32], randomness: &[u8; 32], output: &m
 }
 
 #[no_mangle]
-pub extern "C" fn compute_sbar( s:  &[u8; 32], r:  &[u8; 32], rsk:  &[u8; 32], sbar:  &mut [u8; 32]) -> ParserError{
+pub extern "C" fn compute_sbar(
+    s: &[u8; 32],
+    r: &[u8; 32],
+    rsk: &[u8; 32],
+    sbar: &mut [u8; 32],
+) -> ParserError {
     let s_point = Fr::from_bytes(s).unwrap();
     let r_point = Fr::from_bytes(r).unwrap();
     let rsk_point = Fr::from_bytes(rsk).unwrap();
@@ -123,7 +136,6 @@ pub extern "C" fn compute_sbar( s:  &[u8; 32], r:  &[u8; 32], rsk:  &[u8; 32], s
 
     ParserError::ParserOk
 }
-
 
 #[cfg(not(feature = "cpp_tests"))]
 #[panic_handler]
