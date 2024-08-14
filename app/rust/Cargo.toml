@@ -14,19 +14,19 @@ crate-type = ["staticlib"]
 [dependencies]
 jubjub = { version = "0.10.0", default-features = false }
 
+# Required for the global allocator
 critical-section = { version = "1.1.2" }
 
+# Required for LLHeap
 linked_list_allocator = { version = "0.10.5", default-features = false }
 rlsf = { version = "0.2.1", default-features = false, optional = true }
 const-default = { version = "1.0.0", default-features = false, optional = true }
 
-# bolos and bolos-common are required to use lazy-static
+# bolos are required to use lazy-static
 bolos = { path = "../../deps/ledger-rust/bolos" }
 
 # Taken from https://github.com/iron-fish/ironfish-frost-ledger/tree/ad03ed83b5f2ebf4f494ae260fa1cf81c4599d58
-ironfish-frost = { git = "https://github.com/iron-fish/ironfish-frost.git", branch = "no-std", default-features = false, features = [
-    "dkg",
-] }
+ironfish-frost = { git = "https://github.com/iron-fish/ironfish-frost.git", branch="no-std", default-features = false, features = ["dkg"]}
 getrandom = { version = "0.2", features = ["custom"] }
 
 [target.thumbv6m-none-eabi.dev-dependencies]

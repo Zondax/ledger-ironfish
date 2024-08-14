@@ -39,6 +39,9 @@ typedef enum {
     PointInvalidKey,
 } constant_key_t;
 
+// Ref: https://github.com/iron-fish/ironfish-frost/blob/ddfbe110e584e3e49cc0a68fbb8af5c92994fcd4/src/participant.rs#L35-L36
+#define IDENTITY_LEN    (1+32+32+64)
+
 #define KEY_LENGTH 32
 #define RNG_LEN    80
 
