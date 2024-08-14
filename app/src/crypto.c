@@ -27,12 +27,16 @@
 
 uint32_t hdPath[HDPATH_LEN_DEFAULT];
 
-// DKG path: 44'/1338'/0'/0'/0'
+// TODO Analyze if multiple DKG processes can be done
+// Fix path 0 for multisig dkg process: 44'/1338'/0'/0'/0'
 static const uint32_t dkg_path_1[5] = {(0x80000000u | 0x2c), (0x80000000u | 0x53a), (0x80000000u | 0x0), (0x80000000u | 0x0),
                                        (0x80000000u | 0x0)};
-// DKG path: 44'/1338'/0'/0'/1'
+
+// TODO Analyze if multiple DKG processes can be done
+// Fix path 1 for multisig dkg process: 44'/1338'/0'/0'/1'
 static const uint32_t dkg_path_2[5] = {(0x80000000u | 0x2c), (0x80000000u | 0x53a), (0x80000000u | 0x0), (0x80000000u | 0x0),
                                        (0x80000000u | 0x1)};
+
 static const uint32_t dkg_path_len = sizeof(dkg_path_1) / sizeof(dkg_path_1[0]);
 
 static zxerr_t computeKeys(keys_t *saplingKeys) {
@@ -194,8 +198,9 @@ zxerr_t crypto_fillIdentity(uint8_t *buffer, uint16_t bufferLen) {
     }
 
     zxerr_t error = zxerr_unknown;
-    // Generate private key
-    // TODO: allow multiple keys for DKG?
+
+    // TODO: Analyze if we give support for multiple multisig DKG processes
+    // Generate private keys for multisig DKG process
     uint8_t privateKeyData_1[SK_LEN_25519] = {0};
     uint8_t privateKeyData_2[SK_LEN_25519] = {0};
     CATCH_CXERROR(os_derive_bip32_with_seed_no_throw(HDW_NORMAL, CX_CURVE_Ed25519, dkg_path_1, dkg_path_len, privateKeyData_1,
