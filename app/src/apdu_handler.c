@@ -214,6 +214,12 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     break;
                 }
 
+                case INS_DKG_ROUND_1: {
+                    CHECK_PIN_VALIDATED()
+                    handleDKGRound1(flags, tx, rx);
+                    break;
+                }
+
 #if defined(APP_TESTING)
                 case INS_TEST: {
                     handleTest(flags, tx, rx);

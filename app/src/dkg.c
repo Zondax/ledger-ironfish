@@ -23,12 +23,24 @@
 #include "zxerror.h"
 
 void handleDKGGetIdentity(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-   const zxerr_t err = crypto_fillIdentity(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 2);
-   if (err != zxerr_ok) {
-       *tx = 0;
-       THROW(APDU_CODE_EXECUTION_ERROR);
-   }
+    const zxerr_t err = crypto_fillIdentity(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 2);
+    if (err != zxerr_ok) {
+        *tx = 0;
+        THROW(APDU_CODE_EXECUTION_ERROR);
+    }
 
-   *tx = IDENTITY_LEN;
-   THROW(APDU_CODE_OK);
+    *tx = IDENTITY_LEN;
+    THROW(APDU_CODE_OK);
+}
+
+void handleDKGRound1(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    // TODO implement me
+    /*const zxerr_t err = crypto_fillIdentity(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 2);
+    if (err != zxerr_ok) {
+        *tx = 0;
+        THROW(APDU_CODE_EXECUTION_ERROR);
+    }
+
+    *tx = IDENTITY_LEN;*/
+    THROW(APDU_CODE_OK);
 }
