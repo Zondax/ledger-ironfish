@@ -16,6 +16,15 @@
 
 use jubjub::{AffineNielsPoint, AffinePoint, Fq};
 
+// ParserError should mirror parser_error_t from parser_common.
+// At the moment, just implement OK or Error
+#[repr(C)]
+#[derive(PartialEq, Debug)]
+pub enum ParserError {
+    ParserOk = 0,
+    ParserUnexpectedError = 5,
+}
+
 pub const SPENDING_KEY_GENERATOR: AffineNielsPoint = AffinePoint::from_raw_unchecked(
     Fq::from_raw([
         0x47bf_4692_0a95_a753,

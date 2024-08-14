@@ -19,9 +19,10 @@
 
 use core::panic::PanicInfo;
 
-use constants::SPENDING_KEY_GENERATOR;
+use constants::{ParserError, SPENDING_KEY_GENERATOR};
 mod constants;
 mod heap;
+mod dkg;
 
 use jubjub::{AffinePoint, ExtendedPoint, Fr};
 
@@ -30,6 +31,11 @@ use critical_section::RawRestoreState;
 use heap::Heap;
 
 use bolos::{lazy_static, pic::PIC};
+
+///////////////////////////////////////////////
+// Export DKG functions
+pub use dkg::privkey_to_identity;
+///////////////////////////////////////////////
 
 #[cfg(not(feature = "target-nanos"))]
 const HEAP_SIZE: usize = 8 * 1024;
@@ -51,14 +57,6 @@ unsafe impl critical_section::Impl for CriticalSection {
     unsafe fn release(_restore_state: RawRestoreState) {}
 }
 
-// ParserError should mirror parser_error_t from parser_common.
-// At the moment, just implement OK or Error
-#[repr(C)]
-#[derive(PartialEq, Debug)]
-pub enum ParserError {
-    ParserOk = 0,
-    ParserUnexpectedError = 5,
-}
 
 #[repr(C)]
 pub enum ConstantKey {

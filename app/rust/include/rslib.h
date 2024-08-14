@@ -16,6 +16,9 @@ parser_error_t randomizeKey(const uint8_t key[KEY_LENGTH], const uint8_t randomn
 parser_error_t compute_sbar(const uint8_t s[KEY_LENGTH], const uint8_t r[KEY_LENGTH], const uint8_t rsk[KEY_LENGTH],
                             uint8_t sbar[32]);
 
+// Use to generate a new DKG identity from a private key
+parser_error_t privkey_to_identity(const uint8_t privkey_1[KEY_LENGTH], const uint8_t privkey_2[KEY_LENGTH], uint8_t identity[IDENTITY_LEN]);
+
 // Required to initialize a heap for alloc into the stack memory (necessary for alloc feature on embedded devices)
 parser_error_t heap_init();
 

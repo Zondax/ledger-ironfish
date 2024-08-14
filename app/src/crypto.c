@@ -27,6 +27,14 @@
 
 uint32_t hdPath[HDPATH_LEN_DEFAULT];
 
+// DKG path: 44'/1338'/0'/0'/0'
+static const uint32_t dkg_path_1[5] = {(0x80000000u | 0x2c), (0x80000000u | 0x53a), (0x80000000u | 0x0), (0x80000000u | 0x0),
+                                       (0x80000000u | 0x0)};
+// DKG path: 44'/1338'/0'/0'/1'
+static const uint32_t dkg_path_2[5] = {(0x80000000u | 0x2c), (0x80000000u | 0x53a), (0x80000000u | 0x0), (0x80000000u | 0x0),
+                                       (0x80000000u | 0x1)};
+static const uint32_t dkg_path_len = sizeof(dkg_path_1) / sizeof(dkg_path_1[0]);
+
 static zxerr_t computeKeys(keys_t *saplingKeys) {
     if (saplingKeys == NULL) {
         return zxerr_no_data;
@@ -179,3 +187,34 @@ zxerr_t crypto_fillKeys(uint8_t *buffer, uint16_t bufferLen, key_kind_e requeste
 
     return zxerr_ok;
 }
+
+zxerr_t crypto_fillIdentity(uint8_t *buffer, uint16_t bufferLen) {
+    if (buffer == NULL || bufferLen < IDENTITY_LEN) {
+        return zxerr_buffer_too_small;
+    }
+
+    zxerr_t error = zxerr_unknown;
+    // Generate private key
+    // TODO: allow multiple keys for DKG?
+    uint8_t privateKeyData_1[SK_LEN_25519] = {0};
+    uint8_t privateKeyData_2[SK_LEN_25519] = {0};
+    CATCH_CXERROR(os_derive_bip32_with_seed_no_throw(HDW_NORMAL, CX_CURVE_Ed25519, dkg_path_1, dkg_path_len, privateKeyData_1,
+                                                     NULL, NULL, 0));
+    CATCH_CXERROR(os_derive_bip32_with_seed_no_throw(HDW_NORMAL, CX_CURVE_Ed25519, dkg_path_2, dkg_path_len, privateKeyData_2,
+                                                     NULL, NULL, 0));
+
+    if (privkey_to_identity(privateKeyData_1, privateKeyData_2, buffer) == parser_ok) {
+        error = zxerr_ok;
+    }
+
+catch_cx_error:
+    MEMZERO(privateKeyData_1, sizeof(privateKeyData_1));
+    MEMZERO(privateKeyData_2, sizeof(privateKeyData_2));
+
+    if (error != zxerr_ok) {
+        MEMZERO(buffer, bufferLen);
+    }
+
+    return error;
+}
+

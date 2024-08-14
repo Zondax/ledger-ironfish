@@ -42,6 +42,8 @@ extern "C" {
 
 #define PK_LEN_25519            32u
 
+#define INS_GET_IDENTITY        0x10
+
 typedef enum {
     PublicAddress = 0,
     ViewKeys = 1,
