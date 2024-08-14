@@ -16,6 +16,7 @@
 #![allow(dead_code, unused_imports)]
 
 use crate::constants::ParserError;
+use crate::bolos_local::rng::Trng;
 use ironfish_frost::participant::{Secret, IDENTITY_LEN, Identity};
 use ironfish_frost::dkg;
 
@@ -45,12 +46,13 @@ pub extern "C" fn rs_dkg_round_1(
     let self_identity = Identity::deserialize_from(self_identity_bytes.as_slice()).unwrap();
     let identity_1 = Identity::deserialize_from(identity_1_bytes.as_slice()).unwrap();
     let identity_2 = Identity::deserialize_from(identity_2_bytes.as_slice()).unwrap();
+    let mut rng = Trng {};
 
-    let (round1_secret_package, round1_public_package) = dkg::round1::round1(
+    let (_round1_secret_package, round1_public_package) = dkg::round1::round1(
         &self_identity,
         min_signers,
         &[identity_1, identity_2],
-        thread_rng(),
+        &mut rng,
     ).unwrap();
 
     let round1_public_package_vec = round1_public_package.serialize();

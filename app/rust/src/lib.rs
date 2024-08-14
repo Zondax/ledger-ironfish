@@ -20,6 +20,7 @@
 use core::panic::PanicInfo;
 
 use constants::{ParserError, SPENDING_KEY_GENERATOR};
+mod bolos_local;
 mod constants;
 mod heap;
 mod dkg;

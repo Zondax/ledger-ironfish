@@ -29,6 +29,8 @@ bolos = { path = "../../deps/ledger-rust/bolos" }
 ironfish-frost = { git = "https://github.com/iron-fish/ironfish-frost.git", branch="no-std", default-features = false, features = ["dkg"]}
 getrandom = { version = "0.2", features = ["custom"] }
 
+rand = { version = "0.8", default-features = false }
+
 [target.thumbv6m-none-eabi.dev-dependencies]
 panic-halt = "0.2.0"
 
