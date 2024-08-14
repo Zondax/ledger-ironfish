@@ -61,12 +61,9 @@ include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.devices
 
 $(info TARGET_NAME  = [$(TARGET_NAME)])
 $(info ICONNAME  = [$(ICONNAME)])
-ifneq ($(TARGET_NAME), TARGET_NANOS)
-RUST_FEATURES += --features "dkg-support"
-endif
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
-	RUST_FEATURES += --features "target-nanos,dkg-support"
+	RUST_FEATURES += --features "target-nanos"
 else
 	RUST_FEATURES += --features "dkg-support"
 endif
