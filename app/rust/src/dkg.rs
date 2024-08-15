@@ -20,6 +20,9 @@ use crate::bolos_local::rng::Trng;
 use ironfish_frost::participant::{Secret, IDENTITY_LEN, Identity};
 use ironfish_frost::dkg;
 
+const ROUND1_2P_ENC_PACKAGE_LEN: usize = 520 / 2;
+const ROUND1_2P_PUB_PACKAGE_LEN: usize = 856 / 2;
+
 #[no_mangle]
 pub extern "C" fn privkey_to_identity(
     privkey_1: &[u8; 32],
@@ -41,22 +44,22 @@ pub extern "C" fn rs_dkg_round_1(
     identity_1_bytes: &mut [u8; IDENTITY_LEN],
     identity_2_bytes: &mut [u8; IDENTITY_LEN],
     min_signers: u16,
-    output: &mut [u8; 512]
+    output: &mut [u8; ROUND1_2P_ENC_PACKAGE_LEN+ROUND1_2P_PUB_PACKAGE_LEN]
 ) -> ParserError {
     let self_identity = Identity::deserialize_from(self_identity_bytes.as_slice()).unwrap();
     let identity_1 = Identity::deserialize_from(identity_1_bytes.as_slice()).unwrap();
     let identity_2 = Identity::deserialize_from(identity_2_bytes.as_slice()).unwrap();
     let mut rng = Trng {};
 
-    let (_round1_secret_package, round1_public_package) = dkg::round1::round1(
+    let (round1_secret_package, round1_public_package) = dkg::round1::round1(
         &self_identity,
         min_signers,
         &[identity_1, identity_2],
         &mut rng,
     ).unwrap();
 
-    let round1_public_package_vec = round1_public_package.serialize();
-    output.copy_from_slice(&round1_public_package_vec.as_slice());
+    output[0..ROUND1_2P_ENC_PACKAGE_LEN].copy_from_slice(&round1_secret_package.as_slice());
+    output[ROUND1_2P_ENC_PACKAGE_LEN..ROUND1_2P_ENC_PACKAGE_LEN+ROUND1_2P_PUB_PACKAGE_LEN].copy_from_slice(&round1_public_package.serialize().as_slice());
 
     ParserError::ParserOk
 }
