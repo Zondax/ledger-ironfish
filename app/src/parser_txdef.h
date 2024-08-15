@@ -131,8 +131,19 @@ typedef struct {
 } sign_tx_t;
 
 typedef struct {
+    uint8_t elements;
+    bytes_t data;
+} vec_identities_t;
+
+typedef struct {
+    vec_identities_t identities;
+    uint8_t min_signers;
+} dkg_round_1_t;
+
+typedef struct {
     union {
         sign_tx_t sign_tx;
+        dkg_round_1_t dkg_round_1_tx;
     };
 } parser_tx_t;
 

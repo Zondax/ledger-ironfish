@@ -39,6 +39,7 @@ extern "C" {
 extern parser_tx_t parser_tx_obj;
 
 parser_error_t _readSignTx(parser_context_t *c, sign_tx_t *v);
+parser_error_t _readDkgRound1(parser_context_t *c, dkg_round_1_t *v);
 
 #ifdef __cplusplus
 }

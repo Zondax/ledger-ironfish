@@ -52,6 +52,11 @@ parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t d
             ctx->tx_obj = &parser_tx_obj;
             return _readSignTx(ctx, &(parser_tx_obj.sign_tx));
         }
+        case dkg_round1_tx:{
+            CHECK_ERROR(parser_init_context(ctx, data, dataLen));
+            ctx->tx_obj = &parser_tx_obj;
+            return _readDkgRound1(ctx, &(parser_tx_obj.dkg_round_1_tx));
+        }
         default:
             return parser_unsupported_tx;
     }
@@ -144,6 +149,9 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx,
     switch (ctx->tx_type) {
         case sign_tx: {
             return _getItemSignTx(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        }
+        case dkg_round1_tx: {
+            return parser_unsupported_tx;
         }
         default:
             return parser_unsupported_tx;

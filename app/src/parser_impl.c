@@ -110,7 +110,20 @@ static parser_error_t readBurns(parser_context_t *ctx, vec_burn_description_t *b
     return parser_ok;
 }
 
-parser_error_t _read(parser_context_t *ctx, parser_tx_t *v) {
+static parser_error_t readIdentities(parser_context_t *ctx, vec_identities_t *identities) {
+    if (ctx == NULL || identities == NULL) {
+        return parser_no_data;
+    }
+
+    identities->data.ptr = ctx->buffer + ctx->offset;
+    identities->data.len = 0;
+    const uint8_t *tmpPtr = NULL;
+    for (uint64_t i = 0; i < identities->elements; i++) {
+        CHECK_ERROR(readBytes(ctx, &tmpPtr, IDENTITY_LEN));
+        identities->data.len += IDENTITY_LEN;
+    }
+    return parser_ok;
+}
 
 parser_error_t _readSignTx(parser_context_t *ctx, sign_tx_t *v) {
     CHECK_ERROR(readTransactionVersion(ctx, &v->transactionVersion));
@@ -143,5 +156,15 @@ parser_error_t _readSignTx(parser_context_t *ctx, sign_tx_t *v) {
     }
 
     CHECK_ERROR(transaction_signature_hash(v, v->transactionHash));
+    return parser_ok;
+}
+
+
+parser_error_t _readDkgRound1(parser_context_t *ctx, dkg_round_1_t *v) {
+    CHECK_ERROR(readByte(ctx, &v->identities.elements));
+    CHECK_ERROR(readIdentities(ctx, &v->identities));
+    CHECK_ERROR(readByte(ctx, &v->min_signers));
+
+    // TODO check min_signers vs identities
     return parser_ok;
 }
