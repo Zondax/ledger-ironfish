@@ -66,13 +66,21 @@ typedef enum {
     parser_unexpected_chain,
     parser_missing_field,
     paser_unknown_transaction,
+
+    parser_unsupported_tx,
 } parser_error_t;
+
+typedef enum {
+    sign_tx = 0,
+    dkg_round1_tx
+} tx_type_t;
 
 typedef struct {
     const uint8_t *buffer;
     uint16_t bufferLen;
     uint16_t offset;
-    parser_tx_t *tx_obj;
+    tx_type_t tx_type;
+    parser_tx_t* tx_obj;
 } parser_context_t;
 
 #ifdef __cplusplus

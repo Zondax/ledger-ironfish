@@ -128,6 +128,12 @@ typedef struct {
 
     // Not part of the incoming txn but it's used to compute signatures
     uint8_t transactionHash[32];
+} sign_tx_t;
+
+typedef struct {
+    union {
+        sign_tx_t sign_tx;
+    };
 } parser_tx_t;
 
 #ifdef __cplusplus

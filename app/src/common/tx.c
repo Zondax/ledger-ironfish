@@ -44,7 +44,6 @@ storage_t NV_CONST N_appdata_impl __attribute__((aligned(64)));
 #define N_appdata (*(NV_VOLATILE storage_t *)PIC(&N_appdata_impl))
 #endif
 
-static parser_tx_t tx_obj;
 static parser_context_t ctx_parsed_tx;
 
 void tx_initialize() {
@@ -66,18 +65,25 @@ uint32_t tx_get_buffer_length() {
 uint8_t *tx_get_buffer() {
     return buffering_get_buffer()->data;
 }
+
+void tx_context_sign_tx() {
+    ctx_parsed_tx.tx_type = sign_tx;
+}
+
+void tx_context_dkg_round_1() {
+    ctx_parsed_tx.tx_type = dkg_round1_tx;
+}
+
 void tx_getTxnHash(uint8_t txnHash[HASH_LEN]) {
-    MEMCPY(txnHash, tx_obj.transactionHash, HASH_LEN);
+    MEMCPY(txnHash, ctx_parsed_tx.tx_obj->sign_tx.transactionHash, HASH_LEN);
 }
 
 void tx_getPublicKeyRandomness(uint8_t randomness[KEY_LENGTH]) {
-    MEMCPY(randomness, tx_obj.publicKeyRandomness.ptr, KEY_LENGTH);
+    MEMCPY(randomness, ctx_parsed_tx.tx_obj->sign_tx.publicKeyRandomness.ptr, KEY_LENGTH);
 }
 
 const char *tx_parse() {
-    MEMZERO(&tx_obj, sizeof(tx_obj));
-
-    uint8_t err = parser_parse(&ctx_parsed_tx, tx_get_buffer(), tx_get_buffer_length(), &tx_obj);
+    uint8_t err = parser_parse(&ctx_parsed_tx, tx_get_buffer(), tx_get_buffer_length());
 
     CHECK_APP_CANARY()
 
@@ -93,10 +99,6 @@ const char *tx_parse() {
     }
 
     return NULL;
-}
-
-void tx_parse_reset() {
-    MEMZERO(&tx_obj, sizeof(tx_obj));
 }
 
 zxerr_t tx_getNumItems(uint8_t *num_items) {

@@ -22,6 +22,8 @@
 #include "zxformat.h"
 #include "zxmacros.h"
 
+parser_tx_t parser_tx_obj;
+
 static parser_error_t readTransactionVersion(parser_context_t *ctx, transaction_version_e *txVersion) {
     if (ctx == NULL || txVersion == NULL) {
         return parser_no_data;
@@ -109,6 +111,8 @@ static parser_error_t readBurns(parser_context_t *ctx, vec_burn_description_t *b
 }
 
 parser_error_t _read(parser_context_t *ctx, parser_tx_t *v) {
+
+parser_error_t _readSignTx(parser_context_t *ctx, sign_tx_t *v) {
     CHECK_ERROR(readTransactionVersion(ctx, &v->transactionVersion));
     CHECK_ERROR(readUint64(ctx, &v->spends.elements));
     CHECK_ERROR(readUint64(ctx, &v->outputs.elements));

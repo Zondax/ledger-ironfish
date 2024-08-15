@@ -125,6 +125,7 @@ __Z_INLINE void handleSign(volatile uint32_t *flags, volatile uint32_t *tx, uint
         THROW(APDU_CODE_OK);
     }
 
+    tx_context_sign_tx();
     const char *error_msg = tx_parse();
     CHECK_APP_CANARY()
     if (error_msg != NULL) {
@@ -163,6 +164,40 @@ __Z_INLINE void handle_getversion(__Z_UNUSED volatile uint32_t *flags, volatile 
     G_io_apdu_buffer[11] = (TARGET_ID >> 0) & 0xFF;
 
     *tx += 12;
+    THROW(APDU_CODE_OK);
+}
+
+void handleDKGRound1(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    // Round 1 - 2 participants - 2 min participants
+    // Encrypted Secret Package: 0fed8016dbed46190b94eb2bc9d941ff41ec8fc5cb7b77f318fdd3b08755523801000000586d870b963e731f47c7fb4ed16596a89611443994d36055ce33a080e7e7b39ebc000000f7465ea20f37accb68f2c6cdf98757c9fca0be73c48ab28e31e8832efe5854187685346d9b010ab924c5b2adf22412451e7e930be02f033d42cac93dc58059310614df76357b6f6eed84f153f3b81241b13343566b0672cf416843c5c14be66590abf6074943e87d26459f536fdd8c8e25d62627e85f72198c29bd00cb092a82934a2814c6ff132b50581ab97eb0a12633088d50544c8a15615f45d1d01ecebc101c080ff63622fb497234cbdce0957d5f71ddbb6e50ce537d8d129a
+    // Public Package: 723670b493c9b5de4b59ba7210a62abc9e60fcf7237956b386ecae22e48c8bdfdc896c4f3fc34f57b68d37619bc9d0236835046ca5ca8c43926a047e9ca4f60045a4e9ac96b5788777f9262b29ba01158170c87a0e4ef0ca412e5af4d8f228268939115ab6705764567c94072bcf9f861cb0beaaa458d115685dba7f3e24473a0c8700000000c3d2051e0264888d42407fa2c7c88c9efe20ed2304004077749050cfcf610e148a91bfd7972f609649b5c484741824f3c50a4b203abebded789de0074e030fb678d962285c40a7d3c66908dc27fd0518201b003588f6aae8e41deae327606c46cc7d0fe831e2c5b632795c376d1915feebbfbf8348c87f6187f800cbfe76aeea29c91ccb2c0eba23874ac37cd6ef4a1f712ca085c87a3509819919f5d9ef3da54a702fb77c56020000001e0b07fef0d981d810ded9f5436a3a00ad8f0e8158e1fa6fb77379d36d210084fa08ed3dae153bd1351de50d86df2a2661b13d7592ad6b9fd68731b54a2b8f5330000000cb24dda2cfd5cecff34382da38a1b103dffd8ad2c6a9d4503c0496536d8b172e5f5a6bcedfd13e5d4649205f6fb3bbec8611fa3b79b190b1
+
+    // Encrypted Secret Package: 4aebad1fa44d3bff47295af296b715668ecfcc8eb7edc69ce014546c64e95d00010000001ce7b85bfd3511ef287e93ca7c9ed3a4f6c6b944d39ccbb030c233e2774aacfabc0000004ee6f9a63484a23102bfe7412590ee525a74a943f593eb3fe206b81fa1bfbcad6614d6da077fd029db1d1af4b1f06644f4c182717f924bcaa9de2a6d169beb7bf1b73d9784b52264c320c76d4f3e4ffe1e001a8957f1a9439c0356bf8a4cdba232d3a6bec825a1ec57ff3e4facb2636b5523ae4c2619e131e79c8f3eccab71f4f71c843c133781af78245e9329fe2e80f03e58b0010724909e5770f0a4f0d663bb7f469b06f984a15ecf9c4d4b50866c8d6c97fabbb0712f81099244
+    // Public Package: 723670b493c9b5de4b59ba7210a62abc9e60fcf7237956b386ecae22e48c8bdfdc896c4f3fc34f57b68d37619bc9d0236835046ca5ca8c43926a047e9ca4f60045a4e9ac96b5788777f9262b29ba01158170c87a0e4ef0ca412e5af4d8f228268939115ab6705764567c94072bcf9f861cb0beaaa458d115685dba7f3e24473a0c8700000000c3d2051e0231f4cc5379a17eb307ec7b3c286ee58fb40dc6877e9afa0343500f22d1b4211083b96e777ca1698df08559ad6ee5f22b3861cb5568ddecdae99080b217fdb2c040e3393d9e0efc4f637b8952e59302d2d13e14e9e0423a526c7e2f4a42b97f6432bcd61765dee2a255f826b105f4b37b595288b0cd127eb2f6ceb677f8849b820d6fe6f4fb9165adcdc7fa079de7f6bdeda7a47e9cb8a81d5d6abe6e5a48672f550200000043757bd3f0b505b0daa8912c64d319d105d1c5dc294b191c92774410c264a98b87386edc0046c9e644c14d8335fa7951be7f9d19d8347b29973e4c76a1fabad630000000f1fe79d6fbb57df9299d3714c397d750a14e61be81c23fb45eb548f86ce17e97562ef3d9b27f7539d87ee67d5961f7ee8611fa3b79b190b1
+
+    zemu_log("handleDKGRound1\n");
+    if (!process_chunk(tx, rx)) {
+        THROW(APDU_CODE_OK);
+    }
+
+    tx_context_dkg_round_1();
+    const char *error_msg = tx_parse();
+    CHECK_APP_CANARY()
+    if (error_msg != NULL) {
+        const int error_msg_length = strnlen(error_msg, sizeof(G_io_apdu_buffer));
+        memcpy(G_io_apdu_buffer, error_msg, error_msg_length);
+        *tx += (error_msg_length);
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+
+    // TODO implement me
+    /*const zxerr_t err = crypto_fillIdentity(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 2);
+    if (err != zxerr_ok) {
+        *tx = 0;
+        THROW(APDU_CODE_EXECUTION_ERROR);
+    }
+
+    *tx = IDENTITY_LEN;*/
     THROW(APDU_CODE_OK);
 }
 

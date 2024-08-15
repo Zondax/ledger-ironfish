@@ -30,6 +30,7 @@ parser_error_t parser_init_context(parser_context_t *ctx, const uint8_t *buffer,
     ctx->offset = 0;
     ctx->buffer = NULL;
     ctx->bufferLen = 0;
+    ctx->tx_obj = NULL;
 
     if (bufferSize == 0 || buffer == NULL) {
         // Not available, use defaults
@@ -38,13 +39,22 @@ parser_error_t parser_init_context(parser_context_t *ctx, const uint8_t *buffer,
 
     ctx->buffer = buffer;
     ctx->bufferLen = bufferSize;
+
+    memset(&parser_tx_obj, 0, sizeof(parser_tx_obj));
+
     return parser_ok;
 }
 
-parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t dataLen, parser_tx_t *tx_obj) {
-    CHECK_ERROR(parser_init_context(ctx, data, dataLen));
-    ctx->tx_obj = tx_obj;
-    return _read(ctx, tx_obj);
+parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t dataLen) {
+    switch (ctx->tx_type) {
+        case sign_tx:{
+            CHECK_ERROR(parser_init_context(ctx, data, dataLen));
+            ctx->tx_obj = &parser_tx_obj;
+            return _readSignTx(ctx, &(parser_tx_obj.sign_tx));
+        }
+        default:
+            return parser_unsupported_tx;
+    }
 }
 
 parser_error_t parser_validate(parser_context_t *ctx) {
@@ -85,7 +95,8 @@ static parser_error_t checkSanity(uint8_t numItems, uint8_t displayIdx) {
     return parser_ok;
 }
 
-parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
+
+parser_error_t _getItemSignTx(const parser_context_t *ctx, uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
     UNUSED(pageIdx);
     *pageCount = 1;
@@ -99,24 +110,24 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "Spends");
-            snprintf(outVal, outValLen, "%d", (uint8_t)ctx->tx_obj->spends.elements);
+            snprintf(outVal, outValLen, "%d", (uint8_t)parser_tx_obj.sign_tx.spends.elements);
             return parser_ok;
         case 1:
             snprintf(outKey, outKeyLen, "Outputs");
-            snprintf(outVal, outValLen, "%d", (uint8_t)ctx->tx_obj->outputs.elements);
+            snprintf(outVal, outValLen, "%d", (uint8_t)parser_tx_obj.sign_tx.outputs.elements);
             return parser_ok;
         case 2:
             snprintf(outKey, outKeyLen, "Mints");
-            snprintf(outVal, outValLen, "%d", (uint8_t)ctx->tx_obj->mints.elements);
+            snprintf(outVal, outValLen, "%d", (uint8_t)parser_tx_obj.sign_tx.mints.elements);
             return parser_ok;
         case 3:
             snprintf(outKey, outKeyLen, "Burns");
-            snprintf(outVal, outValLen, "%d", (uint8_t)ctx->tx_obj->burns.elements);
+            snprintf(outVal, outValLen, "%d", (uint8_t)parser_tx_obj.sign_tx.burns.elements);
             return parser_ok;
         case 4: {
             snprintf(outKey, outKeyLen, "TxnHash");
-            pageStringHex(outVal, outValLen, (const char *)ctx->tx_obj->transactionHash,
-                          sizeof(ctx->tx_obj->transactionHash), pageIdx, pageCount);
+            pageStringHex(outVal, outValLen, (const char *)parser_tx_obj.sign_tx.transactionHash,
+                          sizeof(parser_tx_obj.sign_tx.transactionHash), pageIdx, pageCount);
             return parser_ok;
         }
         default:
@@ -124,6 +135,19 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
     }
 
     return parser_display_idx_out_of_range;
+}
+
+parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx,
+                              char *outKey, uint16_t outKeyLen, char *outVal,
+                              uint16_t outValLen, uint8_t pageIdx,
+                              uint8_t *pageCount) {
+    switch (ctx->tx_type) {
+        case sign_tx: {
+            return _getItemSignTx(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        }
+        default:
+            return parser_unsupported_tx;
+    }
 }
 
 const char *parser_getErrorDescription(parser_error_t err) {
@@ -155,7 +179,8 @@ const char *parser_getErrorDescription(parser_error_t err) {
             return "display index out of range";
         case parser_display_page_out_of_range:
             return "display page out of range";
-
+        case parser_unsupported_tx:
+            return "Usupported transaction type";
         default:
             return "Unrecognized error code";
     }

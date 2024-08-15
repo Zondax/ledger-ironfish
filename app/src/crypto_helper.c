@@ -77,7 +77,7 @@ parser_error_t computeIVK(const ak_t ak, const nk_t nk, ivk_t ivk) {
     return parser_ok;
 }
 
-parser_error_t transaction_signature_hash(parser_tx_t *txObj, uint8_t output[HASH_LEN]) {
+parser_error_t transaction_signature_hash(sign_tx_t *txObj, uint8_t output[HASH_LEN]) {
     if (txObj == NULL) {
         return parser_no_data;
     }

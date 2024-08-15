@@ -223,3 +223,35 @@ catch_cx_error:
     return error;
 }
 
+
+zxerr_t crypto_runDKGRound1(uint8_t *buffer, uint16_t bufferLen) {
+    if (buffer == NULL || bufferLen < IDENTITY_LEN) {
+        return zxerr_buffer_too_small;
+    }
+
+    zxerr_t error = zxerr_unknown;
+
+    // TODO: Analyze if we give support for multiple multisig DKG processes
+    // Generate private keys for multisig DKG process
+    uint8_t privateKeyData_1[SK_LEN_25519] = {0};
+    uint8_t privateKeyData_2[SK_LEN_25519] = {0};
+    CATCH_CXERROR(os_derive_bip32_with_seed_no_throw(HDW_NORMAL, CX_CURVE_Ed25519, dkg_path_1, dkg_path_len, privateKeyData_1,
+                                                     NULL, NULL, 0));
+    CATCH_CXERROR(os_derive_bip32_with_seed_no_throw(HDW_NORMAL, CX_CURVE_Ed25519, dkg_path_2, dkg_path_len, privateKeyData_2,
+                                                     NULL, NULL, 0));
+
+    if (privkey_to_identity(privateKeyData_1, privateKeyData_2, buffer) == parser_ok) {
+        error = zxerr_ok;
+    }
+
+catch_cx_error:
+    MEMZERO(privateKeyData_1, sizeof(privateKeyData_1));
+    MEMZERO(privateKeyData_2, sizeof(privateKeyData_2));
+
+    if (error != zxerr_ok) {
+        MEMZERO(buffer, bufferLen);
+    }
+
+    return error;
+}
+

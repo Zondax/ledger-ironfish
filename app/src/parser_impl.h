@@ -36,7 +36,9 @@ extern "C" {
         return parser_unexpected_buffer_end;                            \
     }
 
-parser_error_t _read(parser_context_t *c, parser_tx_t *v);
+extern parser_tx_t parser_tx_obj;
+
+parser_error_t _readSignTx(parser_context_t *c, sign_tx_t *v);
 
 #ifdef __cplusplus
 }
