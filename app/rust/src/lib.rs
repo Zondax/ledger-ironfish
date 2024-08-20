@@ -16,6 +16,9 @@
 #![no_std]
 #![no_builtins]
 #![allow(dead_code, unused_imports)]
+#![cfg_attr(feature = "allocator_api", feature(allocator_api, alloc_layout_extra))]
+
+extern crate alloc;
 
 use core::panic::PanicInfo;
 
