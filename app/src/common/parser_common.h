@@ -67,7 +67,10 @@ typedef enum {
     parser_missing_field,
     paser_unknown_transaction,
 
+    //
     parser_unsupported_tx,
+    parser_unexpected_number_identities,
+    parser_unexpected_min_signers,
 } parser_error_t;
 
 typedef enum {

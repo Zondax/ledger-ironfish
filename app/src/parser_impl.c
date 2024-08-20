@@ -165,6 +165,12 @@ parser_error_t _readDkgRound1(parser_context_t *ctx, dkg_round_1_t *v) {
     CHECK_ERROR(readIdentities(ctx, &v->identities));
     CHECK_ERROR(readByte(ctx, &v->min_signers));
 
-    // TODO check min_signers vs identities
+    if (v->identities.elements == 0){
+        return parser_unexpected_number_identities;
+    }
+    if ( v->min_signers == 0 || v->min_signers > v->identities.elements){
+        return parser_unexpected_min_signers;
+    }
+
     return parser_ok;
 }

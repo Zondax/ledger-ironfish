@@ -32,4 +32,3 @@ void handleDKGGetIdentity(volatile uint32_t *flags, volatile uint32_t *tx, uint3
     *tx = IDENTITY_LEN;
     THROW(APDU_CODE_OK);
 }
-

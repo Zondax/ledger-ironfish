@@ -77,3 +77,5 @@ fuzz-*.log
 /scan-build
 app/rust/.cargo/registry
 app/rust/.cargo/.package-cache*
+
+tmp/rustup

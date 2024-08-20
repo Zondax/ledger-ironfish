@@ -151,7 +151,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx,
             return _getItemSignTx(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
         case dkg_round1_tx: {
-            return parser_unsupported_tx;
+            return parser_ok;
         }
         default:
             return parser_unsupported_tx;

@@ -66,6 +66,10 @@ uint8_t *tx_get_buffer() {
     return buffering_get_buffer()->data;
 }
 
+parser_context_t *tx_get_ctx_parser(){
+    return &ctx_parsed_tx;
+}
+
 void tx_context_sign_tx() {
     ctx_parsed_tx.tx_type = sign_tx;
 }

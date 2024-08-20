@@ -24,6 +24,7 @@
 #include "rslib.h"
 #include "zxformat.h"
 #include "zxmacros.h"
+#include "tx.h"
 
 uint32_t hdPath[HDPATH_LEN_DEFAULT];
 
@@ -224,11 +225,20 @@ catch_cx_error:
 }
 
 
-zxerr_t crypto_runDKGRound1(uint8_t *buffer, uint16_t bufferLen) {
-    if (buffer == NULL || bufferLen < IDENTITY_LEN) {
+zxerr_t crypto_runDkgRound1() {
+    /*if (buffer == NULL || bufferLen < IDENTITY_LEN) {
         return zxerr_buffer_too_small;
+    }*/
+    zemu_log("crypto_runDkgRound1\n");
+    parser_context_t *ctx = tx_get_ctx_parser();
+    if (ctx == NULL || ctx->tx_obj == NULL) {
+        return zxerr_invalid_crypto_settings;
+    }
+    if (ctx->tx_obj->dkg_round_1_tx.identities.data.ptr == NULL) {
+        return zxerr_invalid_crypto_settings;
     }
 
+    zemu_log("crypto_runDkgRound2\n");
     zxerr_t error = zxerr_unknown;
 
     // TODO: Analyze if we give support for multiple multisig DKG processes
@@ -240,16 +250,20 @@ zxerr_t crypto_runDKGRound1(uint8_t *buffer, uint16_t bufferLen) {
     CATCH_CXERROR(os_derive_bip32_with_seed_no_throw(HDW_NORMAL, CX_CURVE_Ed25519, dkg_path_2, dkg_path_len, privateKeyData_2,
                                                      NULL, NULL, 0));
 
-    if (privkey_to_identity(privateKeyData_1, privateKeyData_2, buffer) == parser_ok) {
+
+    zemu_log("crypto_runDkgRound3\n");
+    uint8_t round1[1000] = {0};
+    if (rs_dkg_round_1(privateKeyData_1, privateKeyData_2, &ctx->tx_obj->dkg_round_1_tx.identities, ctx->tx_obj->dkg_round_1_tx.min_signers, round1) == parser_ok) {
         error = zxerr_ok;
     }
 
+    zemu_log("crypto_runDkgRound4\n");
 catch_cx_error:
     MEMZERO(privateKeyData_1, sizeof(privateKeyData_1));
     MEMZERO(privateKeyData_2, sizeof(privateKeyData_2));
 
     if (error != zxerr_ok) {
-        MEMZERO(buffer, bufferLen);
+        MEMZERO(round1, 1000);
     }
 
     return error;

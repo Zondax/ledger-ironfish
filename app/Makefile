@@ -63,9 +63,9 @@ $(info TARGET_NAME  = [$(TARGET_NAME)])
 $(info ICONNAME  = [$(ICONNAME)])
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
-	RUST_FEATURES += --features "target-nanos"
+	RUST_FEATURES += --features "target-nanos, allocator_api"
 else
-	RUST_FEATURES += --features "dkg-support"
+	RUST_FEATURES += --features "dkg-support, allocator_api"
 endif
 
 ifndef ICONNAME
@@ -86,6 +86,8 @@ LDLIBS += -L$(MY_DIR)rust/target/$(RUST_TARGET)/release -lrslib
 APP_SOURCE_PATH += $(CURDIR)/rust/include
 APP_CUSTOM_LINK_DEPENDENCIES = rust
 RUST_TARGET:=thumbv6m-none-eabi
+
+CFLAGS += -O3 -Os -Wno-unknown-pragmas -Wno-unused-parameter -g
 
 .PHONY: rust
 rust:

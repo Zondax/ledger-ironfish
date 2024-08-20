@@ -72,3 +72,14 @@ pub const PUBLIC_KEY_GENERATOR: AffineNielsPoint = AffinePoint::from_raw_uncheck
     ]),
 )
 .to_niels();
+
+#[repr(C)]
+pub struct VecIdentities {
+    pub elements: u8,
+    pub data: Bytes,
+}
+#[repr(C)]
+pub struct Bytes {
+    pub ptr: *const u8,
+    pub len: u16
+}
