@@ -11,7 +11,7 @@ rustflags = [
 # - rustflags = ["-Ctarget-feature=-crt-static"]
 # Reference: https://github.com/rust-lang/rust-bindgen/issues/2360#issuecomment-1595909134
 [host]
-rustflags = ["-Ctarget-feature=-crt-static"]
+rustflags = ["-Ctarget-feature=-crt-static", "-Cdebuginfo=2"]
 
 # Needed for the embedded alloc feature, which enables the global alloc using the stack memory
 # Come from this example to use ironfish-frost on ledger devices
