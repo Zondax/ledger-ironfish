@@ -13,6 +13,7 @@ use critical_section::Mutex;
 use linked_list_allocator::Heap as LLHeap;
 
 use bolos::{pic::PIC};
+use crate::bolos_local::zemu_log::zlog;
 
 /// A linked list first fit heap.
 pub struct Heap {
@@ -55,6 +56,7 @@ impl Heap {
     /// - This function must be called exactly ONCE.
     /// - `size > 0`
     pub unsafe fn init(&self, start_addr: usize, size: usize) {
+        zlog("-- init 1 --\x00");
         critical_section::with(|cs| {
             self.heap
                 .borrow(cs)
@@ -65,25 +67,36 @@ impl Heap {
 
     /// Returns an estimate of the amount of bytes in use.
     pub fn used(&self) -> usize {
+        zlog("-- used 1 --\x00");
         critical_section::with(|cs| self.heap.borrow(cs).borrow_mut().used())
     }
 
     /// Returns an estimate of the amount of bytes available.
     pub fn free(&self) -> usize {
+        zlog("-- free 1 --\x00");
         critical_section::with(|cs| self.heap.borrow(cs).borrow_mut().free())
     }
 
     fn alloc(&self, layout: Layout) -> Option<NonNull<u8>> {
-        critical_section::with(|cs| {
-            self.heap
-                .borrow(cs)
-                .borrow_mut()
-                .allocate_first_fit(layout)
-                .ok()
-        })
+        zlog("-- alloc 1 --\x00");
+        let res = critical_section::with(|cs| {
+            zlog("-- alloc 2 --\x00");
+            let heap = &self.heap;
+            zlog("-- alloc 3 --\x00");
+            let heap2 = heap.borrow(cs);
+            zlog("-- alloc 4 --\x00");
+            let mut heap3 = heap2.borrow_mut();
+            zlog("-- alloc 5 --\x00");
+            let result = heap3.allocate_first_fit(layout);
+            zlog("-- alloc 6 --\x00");
+            result.ok()
+        });
+        zlog("-- alloc 7 --\x00");
+        res
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        zlog("-- dealloc 1 --\x00");
         critical_section::with(|cs| {
             self.heap
                 .borrow(cs)
@@ -93,14 +106,14 @@ impl Heap {
     }
 }
 
-unsafe impl GlobalAlloc for Heap {
+unsafe impl GlobalAlloc for PIC<Heap> {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        self.alloc(layout)
+        zlog("-- GlobalAlloc alloc 1 --\x00");
             .map_or(ptr::null_mut(), |allocation| allocation.as_ptr())
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        self.dealloc(ptr, layout);
+        zlog("-- GlobalAlloc dealloc 1 --\x00");
     }
 }
 
@@ -111,6 +124,7 @@ mod allocator_api {
 
     unsafe impl Allocator for Heap {
         fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+            zlog("-- Allocator allocate 1 --\x00");
             match layout.size() {
                 0 => Ok(NonNull::slice_from_raw_parts(layout.dangling(), 0)),
                 size => self.alloc(layout).map_or(Err(AllocError), |allocation| {
@@ -120,6 +134,7 @@ mod allocator_api {
         }
 
         unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+            zlog("-- Allocator deallocate 1 --\x00");
             if layout.size() != 0 {
                 self.dealloc(ptr.as_ptr(), layout);
             }
