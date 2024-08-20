@@ -54,6 +54,7 @@ default = []
 cpp_tests = []
 dkg-support = []
 target-nanos = []
+allocator_api = []
 
 
 # From https://github.com/iron-fish/ironfish-frost-ledger/tree/ad03ed83b5f2ebf4f494ae260fa1cf81c4599d58

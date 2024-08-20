@@ -106,14 +106,14 @@ impl Heap {
     }
 }
 
-unsafe impl GlobalAlloc for PIC<Heap> {
+unsafe impl GlobalAlloc for Heap {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        zlog("-- GlobalAlloc alloc 1 --\x00");
+        self.alloc(layout)
             .map_or(ptr::null_mut(), |allocation| allocation.as_ptr())
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        zlog("-- GlobalAlloc dealloc 1 --\x00");
+        self.dealloc(ptr, layout);
     }
 }
 
