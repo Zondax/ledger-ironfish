@@ -88,6 +88,7 @@ APP_CUSTOM_LINK_DEPENDENCIES = rust
 RUST_TARGET:=thumbv6m-none-eabi
 
 CFLAGS += -O3 -Os -Wno-unknown-pragmas -Wno-unused-parameter -g
+VERBOSE=1
 
 .PHONY: rust
 rust:

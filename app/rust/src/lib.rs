@@ -49,6 +49,7 @@ const HEAP_SIZE: usize = 128;
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
 
+
 #[lazy_static]
 static mut BUFFER: [u8; HEAP_SIZE] = [0u8; HEAP_SIZE];
 
@@ -69,6 +70,10 @@ pub enum ConstantKey {
     PublicKeyGenerator,
 }
 
+extern "C"{
+    static __rust_no_alloc_shim_is_unstable:u8;
+}
+
 /// Initializes the heap memory for the global allocator.
 ///
 /// The heap is stored in the stack, and has a fixed size.
@@ -76,6 +81,7 @@ pub enum ConstantKey {
 #[no_mangle]
 pub extern "C" fn heap_init() -> ParserError {
     unsafe { HEAP.init(BUFFER.as_mut_ptr() as usize, HEAP_SIZE) };
+    unsafe{ core::ptr::read_volatile(&__rust_no_alloc_shim_is_unstable) };
     ParserError::ParserOk
 }
 #[no_mangle]

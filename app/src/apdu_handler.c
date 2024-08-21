@@ -34,6 +34,7 @@
 static bool tx_initialized = false;
 static bool heap_initialized = false;
 
+
 void extractHDPath(uint32_t rx, uint32_t offset) {
     tx_initialized = false;
 
