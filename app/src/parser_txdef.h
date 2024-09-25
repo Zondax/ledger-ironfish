@@ -124,6 +124,7 @@ typedef struct {
     bytes_t randomizedPublicKey;  // redjubjub::PublicKey,
     bytes_t publicKeyRandomness;
 
+    uint8_t ovk[32];
     bytes_t bindingSignature;
 
     // Not part of the incoming txn but it's used to compute signatures

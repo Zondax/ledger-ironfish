@@ -31,6 +31,9 @@ extern uint32_t hdPath[HDPATH_LEN_DEFAULT];
 zxerr_t crypto_fillKeys(uint8_t *buffer, uint16_t bufferLen, key_kind_e requestedKey, uint16_t *cmdResponseLen);
 zxerr_t crypto_sign(const uint8_t publickeyRandomness[32], const uint8_t txnHash[32], uint8_t *output, uint16_t outputLen);
 
+#if defined(LEDGER_SPECIFIC)
+zxerr_t crypto_generateSaplingKeys(uint8_t *output, uint16_t outputLen, key_kind_e requestedKey);
+#endif
 #ifdef __cplusplus
 }
 #endif

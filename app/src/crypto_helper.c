@@ -220,3 +220,15 @@ zxerr_t crypto_signRedjubjub(const uint8_t randomizedPrivateKey[KEY_LENGTH], con
 
     return zxerr_ok;
 }
+
+#if defined(LEDGER_SPECIFIC)
+parser_error_t crypto_get_ovk(uint8_t ovk[KEY_LENGTH]) {
+    uint8_t buffer[4 * KEY_LENGTH] = {0};
+
+    if (crypto_generateSaplingKeys(buffer, sizeof(buffer), ViewKeys) != zxerr_ok) {
+        return parser_unexpected_error;
+    }
+    memcpy(ovk, buffer + 3 * KEY_LENGTH, KEY_LENGTH);
+    return parser_ok;
+}
+#endif
