@@ -14,24 +14,17 @@
 *  limitations under the License.
 ********************************************************************************/
 #![no_std]
+#![no_alloc]
 #![no_builtins]
 #![allow(dead_code, unused_imports)]
 
 use core::panic::PanicInfo;
 
-use constants::{SPENDING_KEY_GENERATOR};
-mod constants;
+pub mod crypto;
+pub mod ironfish;
+pub mod parser;
 
-use jubjub::{Fr, AffinePoint, ExtendedPoint};
-
-// ParserError should mirror parser_error_t from parser_common.
-// At the moment, just implement OK or Error
-#[repr(C)]
-#[derive(PartialEq, Debug)]
-pub enum ParserError {
-    ParserOk = 0,
-    ParserUnexpectedError = 5,
-}
+use jubjub::{AffinePoint, ExtendedPoint, Fr};
 
 #[repr(C)]
 pub enum ConstantKey {
@@ -48,11 +41,17 @@ pub extern "C" fn from_bytes_wide(input: &[u8; 64], output: &mut [u8; 32]) -> Pa
 }
 
 #[no_mangle]
-pub extern "C" fn scalar_multiplication(input: &[u8; 32], key: ConstantKey, output: *mut [u8; 32]) -> ParserError {
+pub extern "C" fn scalar_multiplication(
+    input: &[u8; 32],
+    key: ConstantKey,
+    output: *mut [u8; 32],
+) -> ParserError {
     let key_point = match key {
-        ConstantKey::SpendingKeyGenerator => constants::SPENDING_KEY_GENERATOR,
-        ConstantKey::ProofGenerationKeyGenerator => constants::PROOF_GENERATION_KEY_GENERATOR,
-        ConstantKey::PublicKeyGenerator => constants::PUBLIC_KEY_GENERATOR,
+        ConstantKey::SpendingKeyGenerator => utils::constants::SPENDING_KEY_GENERATOR,
+        ConstantKey::ProofGenerationKeyGenerator => {
+            utils::constants::PROOF_GENERATION_KEY_GENERATOR
+        }
+        ConstantKey::PublicKeyGenerator => utils::constants::PUBLIC_KEY_GENERATOR,
     };
 
     let extended_point = key_point.multiply_bits(input);
@@ -67,8 +66,11 @@ pub extern "C" fn scalar_multiplication(input: &[u8; 32], key: ConstantKey, outp
 }
 
 #[no_mangle]
-pub extern "C" fn randomizeKey(key: &[u8; 32], randomness: &[u8; 32], output: &mut [u8; 32]) -> ParserError {
-
+pub extern "C" fn randomizeKey(
+    key: &[u8; 32],
+    randomness: &[u8; 32],
+    output: &mut [u8; 32],
+) -> ParserError {
     let mut skfr = Fr::from_bytes(key).unwrap();
     let alphafr = Fr::from_bytes(randomness).unwrap();
     skfr += alphafr;
@@ -78,7 +80,12 @@ pub extern "C" fn randomizeKey(key: &[u8; 32], randomness: &[u8; 32], output: &m
 }
 
 #[no_mangle]
-pub extern "C" fn compute_sbar( s:  &[u8; 32], r:  &[u8; 32], rsk:  &[u8; 32], sbar:  &mut [u8; 32]) -> ParserError{
+pub extern "C" fn compute_sbar(
+    s: &[u8; 32],
+    r: &[u8; 32],
+    rsk: &[u8; 32],
+    sbar: &mut [u8; 32],
+) -> ParserError {
     let s_point = Fr::from_bytes(s).unwrap();
     let r_point = Fr::from_bytes(r).unwrap();
     let rsk_point = Fr::from_bytes(rsk).unwrap();
@@ -89,6 +96,16 @@ pub extern "C" fn compute_sbar( s:  &[u8; 32], r:  &[u8; 32], rsk:  &[u8; 32], s
     ParserError::ParserOk
 }
 
+#[no_mangle]
+pub extern "C" fn decrypt_note(note: *const u8, note_len: usize, ovk: &[u8; 32]) -> ParserError {
+    if note.is_null() || note_len == 0 {
+        return ParserError::ParserUnexpectedError; // Handle null or zero length
+    }
+    let note_slice = unsafe { core::slice::from_raw_parts(note, note_len as usize) };
+
+    MerkelNote::from_bytes(note_slice);
+    ParserError::ParserOk
+}
 
 #[cfg(not(test))]
 #[panic_handler]
