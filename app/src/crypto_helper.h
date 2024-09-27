@@ -49,7 +49,7 @@ parser_error_t crypto_get_ovk(uint8_t ovk[KEY_LENGTH]);
 parser_error_t transaction_signature_hash(parser_tx_t *txObj, uint8_t output[HASH_LEN]);
 zxerr_t crypto_signRedjubjub(const uint8_t randomizedPrivateKey[KEY_LENGTH], const uint8_t rng[RNG_LEN],
                              const uint8_t transactionHash[HASH_LEN], uint8_t output[REDJUBJUB_SIGNATURE_LEN]);
-
+parser_error_t crypto_decrypt_merkle_note(parser_tx_t *txObj, const uint8_t *m_note, const uint8_t ovk[KEY_LENGTH]);
 #ifdef __cplusplus
 }
 #endif
