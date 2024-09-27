@@ -1,18 +1,18 @@
-#*******************************************************************************
-#*   (c) 2018-2024 Zondax AG
-#*
-#*  Licensed under the Apache License, Version 2.0 (the "License");
-#*  you may not use this file except in compliance with the License.
-#*  You may obtain a copy of the License at
-#*
-#*      http://www.apache.org/licenses/LICENSE-2.0
-#*
-#*  Unless required by applicable law or agreed to in writing, software
-#*  distributed under the License is distributed on an "AS IS" BASIS,
-#*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#*  See the License for the specific language governing permissions and
-#*  limitations under the License.
-#********************************************************************************
+# *******************************************************************************
+# *   (c) 2018-2024 Zondax AG
+# *
+# *  Licensed under the Apache License, Version 2.0 (the "License");
+# *  you may not use this file except in compliance with the License.
+# *  You may obtain a copy of the License at
+# *
+# *      http://www.apache.org/licenses/LICENSE-2.0
+# *
+# *  Unless required by applicable law or agreed to in writing, software
+# *  distributed under the License is distributed on an "AS IS" BASIS,
+# *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# *  See the License for the specific language governing permissions and
+# *  limitations under the License.
+# ********************************************************************************
 cmake_minimum_required(VERSION 3.28)
 include("cmake/HunterGate.cmake")
 HunterGate(
@@ -22,17 +22,17 @@ HunterGate(
 )
 
 if(CMAKE_GENERATOR MATCHES "Ninja")
-        message(FATAL_ERROR "This project does not support the Ninja generator. "
-                            "Please use Unix Makefiles or another supported generator. "
-                            "This error is typical in CLion. In this case, switch to generator Unix Makefiles.")
+    message(FATAL_ERROR "This project does not support the Ninja generator. "
+        "Please use Unix Makefiles or another supported generator. "
+        "This error is typical in CLion. In this case, switch to generator Unix Makefiles.")
 endif()
 
-########################################################
+# #######################################################
 project(ledger-ironfish VERSION 0.0.0)
 set(CMAKE_CXX_STANDARD 20)
 cmake_policy(SET CMP0025 NEW)
-cmake_policy(SET CMP0144 NEW)
 
+# cmake_policy(SET CMP0144 NEW)
 set(HUNTER_STATUS_DEBUG ON)
 set(HUNTER_TLS_VERIFY OFF)
 
@@ -60,22 +60,22 @@ if(ENABLE_FUZZING)
     SET(ENABLE_SANITIZERS ON CACHE BOOL "Sanitizer automatically enabled" FORCE)
     SET(CMAKE_BUILD_TYPE Debug)
 
-    if (DEFINED ENV{FUZZ_LOGGING})
+    if(DEFINED ENV{FUZZ_LOGGING})
         add_definitions(-DFUZZING_LOGGING)
         message(FATAL_ERROR "Fuzz logging enabled")
     endif()
 
     set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,bugprone-*,cert-*,clang-analyzer-*,-cert-err58-cpp,misc-*)
 
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10.0)
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10.0)
             message(FATAL_ERROR "Clang version must be at least 10.0!")
         endif()
     else()
         message(FATAL_ERROR
-                "You are using an unsupported compiler! Fuzzing only works with Clang 10.\n"
-                "1. Install clang-10 \n"
-                "2. Pass -DCMAKE_C_COMPILER=clang-10 -DCMAKE_CXX_COMPILER=clang++-10")
+            "You are using an unsupported compiler! Fuzzing only works with Clang 10.\n"
+            "1. Install clang-10 \n"
+            "2. Pass -DCMAKE_C_COMPILER=clang-10 -DCMAKE_CXX_COMPILER=clang++-10")
     endif()
 
     string(APPEND CMAKE_C_FLAGS " -fsanitize=fuzzer-no-link")
@@ -95,67 +95,69 @@ if(ENABLE_SANITIZERS)
     string(APPEND CMAKE_LINKER_FLAGS " -fsanitize=address,undefined -fsanitize-recover=address,undefined")
 endif()
 
-set (RETRIEVE_MAJOR_CMD
-        "cat ${CMAKE_CURRENT_SOURCE_DIR}/app/Makefile.version | grep APPVERSION_M | cut -b 14- | tr -d '\n'"
+set(RETRIEVE_MAJOR_CMD
+    "cat ${CMAKE_CURRENT_SOURCE_DIR}/app/Makefile.version | grep APPVERSION_M | cut -b 14- | tr -d '\n'"
 )
-set (RETRIEVE_MINOR_CMD
-        "cat ${CMAKE_CURRENT_SOURCE_DIR}/app/Makefile.version | grep APPVERSION_N | cut -b 14- | tr -d '\n'"
-)
-execute_process(
-        COMMAND bash "-c" ${RETRIEVE_MAJOR_CMD}
-        RESULT_VARIABLE MAJOR_RESULT
-        OUTPUT_VARIABLE MAJOR_VERSION
+set(RETRIEVE_MINOR_CMD
+    "cat ${CMAKE_CURRENT_SOURCE_DIR}/app/Makefile.version | grep APPVERSION_N | cut -b 14- | tr -d '\n'"
 )
 execute_process(
-        COMMAND bash "-c" ${RETRIEVE_MINOR_CMD}
-        RESULT_VARIABLE MINOR_RESULT
-        OUTPUT_VARIABLE MINOR_VERSION
+    COMMAND bash "-c" ${RETRIEVE_MAJOR_CMD}
+    RESULT_VARIABLE MAJOR_RESULT
+    OUTPUT_VARIABLE MAJOR_VERSION
+)
+execute_process(
+    COMMAND bash "-c" ${RETRIEVE_MINOR_CMD}
+    RESULT_VARIABLE MINOR_RESULT
+    OUTPUT_VARIABLE MINOR_VERSION
 )
 
-message(STATUS "LEDGER_MAJOR_VERSION [${MAJOR_RESULT}]: ${MAJOR_VERSION}" )
-message(STATUS "LEDGER_MINOR_VERSION [${MINOR_RESULT}]: ${MINOR_VERSION}" )
+message(STATUS "LEDGER_MAJOR_VERSION [${MAJOR_RESULT}]: ${MAJOR_VERSION}")
+message(STATUS "LEDGER_MINOR_VERSION [${MINOR_RESULT}]: ${MINOR_VERSION}")
 
 add_definitions(
     -DLEDGER_MAJOR_VERSION=${MAJOR_VERSION}
     -DLEDGER_MINOR_VERSION=${MINOR_VERSION}
 )
 
-
 # #############################################################
 # #############################################################
 # Static Libraries
 file(GLOB_RECURSE LIB_SRC
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/app_mode.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/base58.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/bech32.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/bignum.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/hexutils.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/zxmacros.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/zxformat.c
-        ####
-        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_impl.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_impl_common.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/crypto_helper.c
-        ####
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/blake2/ref/blake2b-ref.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/blake2s/blake2s-ref.c
-        )
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/app_mode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/base58.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/bech32.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/bignum.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/hexutils.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/zxmacros.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/zxformat.c
+
+    # ###
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_impl.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_impl_common.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/src/crypto_helper.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/src/crypto_helper/chacha.c
+
+    # ###
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/blake2/ref/blake2b-ref.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/src/blake2s/blake2s-ref.c
+)
 
 add_library(app_lib STATIC ${LIB_SRC})
 
 target_include_directories(app_lib PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/app/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/lib
-        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/common
-        ${CMAKE_CURRENT_SOURCE_DIR}/app/rust/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/blake2/ref
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/src/lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/src/crypto_helper
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/src/common
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/rust/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/blake2/ref
+)
 
-        )
-
-##############################################################
-## Rust library for CPP tests
+# #############################################################
+# # Rust library for CPP tests
 set(RUST_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/app/rust")
 
 # Determine the Rust target triple based on the host system
@@ -204,39 +206,41 @@ add_dependencies(rslib RustLibBuild)
 # Ensure your C++ targets depend on the Rust library being built first
 # For example, for your app_lib static library:
 add_dependencies(app_lib rslib)
-##############################################################
-#  Tests
+
+# #############################################################
+# Tests
 file(GLOB_RECURSE TESTS_SRC
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
 
 add_executable(unittests ${TESTS_SRC})
 target_include_directories(unittests PRIVATE
-        ${gtest_SOURCE_DIR}/include
-        ${gmock_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/app/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/lib
-        ###
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/blake2/ref
-        )
+    ${gtest_SOURCE_DIR}/include
+    ${gmock_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/src/lib
+
+    # ##
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/blake2/ref
+)
 
 target_link_libraries(unittests PRIVATE
-        app_lib
-        rslib
-        GTest::gtest_main
-        fmt::fmt
-        JsonCpp::JsonCpp)
+    app_lib
+    rslib
+    GTest::gtest_main
+    fmt::fmt
+    JsonCpp::JsonCpp)
 
 add_compile_definitions(TESTVECTORS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/")
 add_test(NAME unittests COMMAND unittests)
 set_tests_properties(unittests PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
-##############################################################
-##############################################################
-#  Fuzz Targets
+# #############################################################
+# #############################################################
+# Fuzz Targets
 if(ENABLE_FUZZING)
     set(FUZZ_TARGETS
         parser_parse
-        )
+    )
 
     foreach(target ${FUZZ_TARGETS})
         add_executable(fuzz-${target} ${CMAKE_CURRENT_SOURCE_DIR}/fuzz/${target}.cpp)

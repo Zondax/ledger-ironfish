@@ -116,6 +116,9 @@ parser_error_t chacha(uint8_t *out, size_t out_len, const uint8_t *in, size_t in
     input[14] = U8TO32_LITTLE(nonce + 4);
     input[15] = U8TO32_LITTLE(nonce + 8);
     while (in_len > 0) {
+#if defined(LEDGER_SPECIFIC)
+        io_seproxyhal_io_heartbeat();
+#endif
         todo = sizeof(buf);
         if (in_len < todo) {
             todo = in_len;

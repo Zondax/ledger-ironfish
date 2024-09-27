@@ -242,7 +242,7 @@ parser_error_t crypto_calculate_key_for_encryption_keys(const uint8_t *note, con
 
 #if defined(LEDGER_SPECIFIC)
     cx_blake2b_t ctx = {0};
-    ASSERT_CX_OK(cx_blake2b_init2_no_throw(&ctx, 32, NULL, 0, (uint8_t *)SHARED_KEY_PERSONALIZATION,
+    ASSERT_CX_OK(cx_blake2b_init2_no_throw(&ctx, 256, NULL, 0, (uint8_t *)SHARED_KEY_PERSONALIZATION,
                                            sizeof(SHARED_KEY_PERSONALIZATION)));
     ASSERT_CX_OK(cx_blake2b_update(&ctx, ovk, 32));
     ASSERT_CX_OK(cx_blake2b_update(&ctx, note, VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE + EPHEMERAL_PUBLIC_KEY_SIZE));
@@ -274,6 +274,9 @@ parser_error_t crypto_decrypt_merkle_note(parser_tx_t *txObj, const uint8_t *m_n
     uint8_t cc_nonce[CHACHA_NONCE_SIZE] = {0};
     CHECK_ERROR(chacha(note_encryption_key, sizeof(note_encryption_key), m_note + NOTE_ENCRYPTION_KEYS_OFFSET,
                        ENCRYPTED_SHARED_KEY_SIZE, encryption_key, cc_nonce, 1));
+#if defined(LEDGER_SPECIFIC)
+        io_seproxyhal_io_heartbeat();
+#endif
     CHECK_APP_CANARY()
 
     // Extract public address and secret key from the note encryption key
@@ -286,14 +289,19 @@ parser_error_t crypto_decrypt_merkle_note(parser_tx_t *txObj, const uint8_t *m_n
     uint8_t shared_key[32] = {0};
     const uint8_t *ephemeral_public_key = m_note + VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE;
     CHECK_ERROR(shared_secret(secret_key, public_address, ephemeral_public_key, shared_key));
+#if defined(LEDGER_SPECIFIC)
+        io_seproxyhal_io_heartbeat();
+#endif
     CHECK_APP_CANARY()
 
     // Finally decrypt the note
     uint8_t plain_text[ENCRYPTED_NOTE_SIZE] = {0};
     CHECK_ERROR(chacha(plain_text, sizeof(plain_text), m_note + ENCRYPTED_NOTE_OFFSET, ENCRYPTED_NOTE_SIZE, shared_key,
                        cc_nonce, 1));
+#if defined(LEDGER_SPECIFIC)
+        io_seproxyhal_io_heartbeat();
+#endif
     CHECK_APP_CANARY()
-
     // Fill the txObj with the decrypted note
     txObj->outputs.decrypted_note.value = *(uint64_t *)(plain_text + SCALAR_SIZE);
     MEMCPY(txObj->outputs.decrypted_note.asset_id, plain_text + SCALAR_SIZE + AMOUNT_VALUE_SIZE + MEMO_SIZE,
