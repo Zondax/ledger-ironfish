@@ -87,7 +87,7 @@ describe('Standard', function () {
       await sim.start({
         ...defaultOptions,
         model: m.name,
-        approveKeyword: isTouchDevice(m.name) ? 'Path' : '',
+        approveKeyword: isTouchDevice(m.name) ? 'Confirm' : '',
         approveAction: ButtonKind.ApproveTapButton,
       })
       const app = new IronfishApp(sim.getTransport(), false)
