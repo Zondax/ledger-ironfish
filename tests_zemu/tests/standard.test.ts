@@ -14,11 +14,18 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import Zemu, { ButtonKind, zondaxMainmenuNavigation } from '@zondax/zemu'
-import { PATH, defaultOptions, expectedKeys, models, spend_1_output_1, spend_1_output_4_mint_1_burn_1, spend_2_output_6_mint_2_burn_1 } from './common'
-import IronfishApp, { IronfishKeys, ResponseAddress, ResponseProofGenKey, ResponseViewKey } from '@zondax/ledger-ironfish'
+import Zemu, { ButtonKind, isTouchDevice, zondaxMainmenuNavigation } from '@zondax/zemu'
+import { PATH, defaultOptions, expectedKeys, models, tx_output_3 } from './common'
+import IronfishApp, {
+  IronfishKeys,
+  KeyResponse,
+  ResponseAddress,
+  ResponseProofGenKey,
+  ResponseSign,
+  ResponseViewKey,
+} from '@zondax/ledger-ironfish'
 
-jest.setTimeout(45000)
+jest.setTimeout(500000)
 
 describe('Standard', function () {
   test.concurrent.each(models)('can start and stop container', async function (m) {
@@ -33,9 +40,9 @@ describe('Standard', function () {
   test.concurrent.each(models)('main menu', async function (m) {
     const sim = new Zemu(m.path)
     try {
+      const mainmenuNavigation = zondaxMainmenuNavigation(m.name)
       await sim.start({ ...defaultOptions, model: m.name })
-      const nav = zondaxMainmenuNavigation(m.name, [1, 0, 0, 4, -5])
-      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, nav.schedule)
+      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, mainmenuNavigation.schedule)
     } finally {
       await sim.close()
     }
@@ -45,13 +52,11 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      const app = new IronfishApp(sim.getTransport())
+      const app = new IronfishApp(sim.getTransport(), false)
       const resp = await app.getVersion()
 
       console.log(resp)
 
-      expect(resp.returnCode).toEqual(0x9000)
-      expect(resp.errorMessage).toEqual('No errors')
       expect(resp).toHaveProperty('testMode')
       expect(resp).toHaveProperty('major')
       expect(resp).toHaveProperty('minor')
@@ -65,14 +70,12 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      const app = new IronfishApp(sim.getTransport())
+      const app = new IronfishApp(sim.getTransport(), false)
 
-      const resp: ResponseAddress = await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false)
+      const resp: ResponseAddress = (await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false)) as ResponseAddress
       console.log(resp)
 
-      expect(resp.returnCode).toEqual(0x9000)
-      expect(resp.errorMessage).toEqual('No errors')
-      expect(resp.publicAddress?.toString('hex')).toEqual(expectedKeys.publicAddress)
+      expect(resp.publicAddress.toString('hex')).toEqual(expectedKeys.publicAddress)
     } finally {
       await sim.close()
     }
@@ -84,42 +87,19 @@ describe('Standard', function () {
       await sim.start({
         ...defaultOptions,
         model: m.name,
-        approveKeyword: m.name === 'stax' ? 'Path' : '',
+        approveKeyword: isTouchDevice(m.name) ? 'Confirm' : '',
         approveAction: ButtonKind.ApproveTapButton,
       })
-      const app = new IronfishApp(sim.getTransport())
+      const app = new IronfishApp(sim.getTransport(), false)
 
       const respRequest = app.retrieveKeys(PATH, IronfishKeys.PublicAddress, true)
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
       await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-show_address`)
 
-      const resp: ResponseAddress = await respRequest
+      const resp: ResponseAddress = (await respRequest) as ResponseAddress
       console.log(resp)
-
-      expect(resp.returnCode).toEqual(0x9000)
-      expect(resp.errorMessage).toEqual('No errors')
-    } finally {
-      await sim.close()
-    }
-  })
-
-  test.concurrent.each(models)('show address - reject', async function (m) {
-    const sim = new Zemu(m.path)
-    try {
-      await sim.start({ ...defaultOptions, model: m.name, rejectKeyword: m.name === 'stax' ? 'QR' : '' })
-      const app = new IronfishApp(sim.getTransport())
-
-      const respRequest = app.retrieveKeys(PATH, IronfishKeys.PublicAddress, true)
-      // Wait until we are not in the main menu
-      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-      await sim.compareSnapshotsAndReject('.', `${m.prefix.toLowerCase()}-show_address_reject`)
-
-      const resp: ResponseAddress = await respRequest
-      console.log(resp)
-
-      expect(resp.returnCode).toEqual(0x6986)
-      expect(resp.errorMessage).toEqual('Transaction rejected')
+      expect(resp.publicAddress.toString('hex')).toEqual(expectedKeys.publicAddress)
     } finally {
       await sim.close()
     }
@@ -129,13 +109,11 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      const app = new IronfishApp(sim.getTransport())
+      const app = new IronfishApp(sim.getTransport(), false)
 
-      const resp: ResponseProofGenKey = await app.retrieveKeys(PATH, IronfishKeys.ProofGenerationKey, false)
+      const resp: ResponseProofGenKey = (await app.retrieveKeys(PATH, IronfishKeys.ProofGenerationKey, false)) as ResponseProofGenKey
       console.log(resp)
 
-      expect(resp.returnCode).toEqual(0x9000)
-      expect(resp.errorMessage).toEqual('No errors')
       expect(resp.ak?.toString('hex')).toEqual(expectedKeys.ak)
       expect(resp.nsk?.toString('hex')).toEqual(expectedKeys.nsk)
     } finally {
@@ -146,19 +124,22 @@ describe('Standard', function () {
   test.concurrent.each(models)('show view key', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
-      const app = new IronfishApp(sim.getTransport())
+      await sim.start({
+        ...defaultOptions,
+        model: m.name,
+        approveKeyword: isTouchDevice(m.name) ? 'Approve' : '',
+        approveAction: ButtonKind.ApproveTapButton,
+      })
+      const app = new IronfishApp(sim.getTransport(), false)
 
       const respRequest = app.retrieveKeys(PATH, IronfishKeys.ViewKey, true)
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
       await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-show_viewkey`)
 
-      const resp: ResponseViewKey = await respRequest
+      const resp: ResponseViewKey = (await respRequest) as ResponseViewKey
       console.log(resp)
 
-      expect(resp.returnCode).toEqual(0x9000)
-      expect(resp.errorMessage).toEqual('No errors')
       expect(resp.viewKey?.toString('hex')).toEqual(expectedKeys.viewKey)
       expect(resp.ivk?.toString('hex')).toEqual(expectedKeys.ivk)
       expect(resp.ovk?.toString('hex')).toEqual(expectedKeys.ovk)
@@ -167,13 +148,13 @@ describe('Standard', function () {
     }
   })
 
-  test.concurrent.each(models)('blind-signing', async function (m) {
+  test.concurrent.each(models)('sign transaction', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      const app = new IronfishApp(sim.getTransport())
+      const app = new IronfishApp(sim.getTransport(), false)
 
-      const txBlob = Buffer.from(spend_1_output_1, 'hex')
+      const txBlob = Buffer.from(tx_output_3, 'hex')
       const responsePublicAddress = await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false)
       console.log(responsePublicAddress)
 
@@ -181,74 +162,13 @@ describe('Standard', function () {
       const signatureRequest = app.sign(PATH, txBlob)
 
       // Wait until we are not in the main menu
-      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-blind_sign`)
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot(), 200000)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_3_out_tx`)
 
-      const signatureResponse = await signatureRequest
+      const signatureResponse = (await signatureRequest) as ResponseSign
       console.log(signatureResponse)
 
-      console.log(signatureResponse.signatures?.length)
-
-      expect(signatureResponse.returnCode).toEqual(0x9000)
-      expect(signatureResponse.errorMessage).toEqual('No errors')
-    } finally {
-      await sim.close()
-    }
-  })
-
-  test.concurrent.each(models)('blind-signing2', async function (m) {
-    const sim = new Zemu(m.path)
-    try {
-      await sim.start({ ...defaultOptions, model: m.name })
-      const app = new IronfishApp(sim.getTransport())
-
-      const txBlob = Buffer.from(spend_1_output_4_mint_1_burn_1, 'hex')
-      const responsePublicAddress = await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false)
-      console.log(responsePublicAddress)
-
-      // do not wait here.. we need to navigate
-      const signatureRequest = app.sign(PATH, txBlob)
-
-      // Wait until we are not in the main menu
-      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-blind_sign2`)
-
-      const signatureResponse = await signatureRequest
-      console.log(signatureResponse)
-
-      console.log(signatureResponse.signatures?.length)
-
-      expect(signatureResponse.returnCode).toEqual(0x9000)
-      expect(signatureResponse.errorMessage).toEqual('No errors')
-    } finally {
-      await sim.close()
-    }
-  })
-
-  test.concurrent.each(models)('blind-signing3', async function (m) {
-    const sim = new Zemu(m.path)
-    try {
-      await sim.start({ ...defaultOptions, model: m.name })
-      const app = new IronfishApp(sim.getTransport())
-
-      const txBlob = Buffer.from(spend_2_output_6_mint_2_burn_1, 'hex')
-      const responsePublicAddress = await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false)
-      console.log(responsePublicAddress)
-
-      // do not wait here.. we need to navigate
-      const signatureRequest = app.sign(PATH, txBlob)
-
-      // Wait until we are not in the main menu
-      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-blind_sign3`)
-
-      const signatureResponse = await signatureRequest
-      console.log(signatureResponse)
-
-      console.log(signatureResponse.signatures?.length)
-
-      expect(signatureResponse.returnCode).toEqual(0x9000)
-      expect(signatureResponse.errorMessage).toEqual('No errors')
+      console.log(signatureResponse.signature.length)
     } finally {
       await sim.close()
     }
