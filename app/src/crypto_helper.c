@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "coin.h"
+#include "crypto_helper/chacha.h"
 #include "keys_personalizations.h"
 #include "rslib.h"
 #include "zxformat.h"
@@ -219,4 +220,98 @@ zxerr_t crypto_signRedjubjub(const uint8_t randomizedPrivateKey[KEY_LENGTH], con
     MEMZERO(s, sizeof(s));
 
     return zxerr_ok;
+}
+
+#if defined(LEDGER_SPECIFIC)
+parser_error_t crypto_get_ovk(uint8_t ovk[KEY_LENGTH]) {
+    uint8_t buffer[4 * KEY_LENGTH] = {0};
+
+    if (crypto_generateSaplingKeys(buffer, sizeof(buffer), ViewKeys) != zxerr_ok) {
+        return parser_unexpected_error;
+    }
+    memcpy(ovk, buffer + 3 * KEY_LENGTH, KEY_LENGTH);
+    return parser_ok;
+}
+#endif
+
+parser_error_t crypto_calculate_key_for_encryption_keys(const uint8_t *note, const uint8_t ovk[KEY_LENGTH],
+                                                        uint8_t output[32]) {
+    if (ovk == NULL || note == NULL) {
+        return parser_no_data;
+    }
+
+#if defined(LEDGER_SPECIFIC)
+    cx_blake2b_t ctx = {0};
+    ASSERT_CX_OK(cx_blake2b_init2_no_throw(&ctx, 256, NULL, 0, (uint8_t *)SHARED_KEY_PERSONALIZATION,
+                                           sizeof(SHARED_KEY_PERSONALIZATION)));
+    ASSERT_CX_OK(cx_blake2b_update(&ctx, ovk, 32));
+    ASSERT_CX_OK(cx_blake2b_update(&ctx, note, VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE + EPHEMERAL_PUBLIC_KEY_SIZE));
+    cx_blake2b_final(&ctx, output);
+#else
+    blake2b_state state = {0};
+    blake2b_init_with_personalization(&state, 32, (const uint8_t *)SHARED_KEY_PERSONALIZATION,
+                                      sizeof(SHARED_KEY_PERSONALIZATION));
+    blake2b_update(&state, ovk, 32);
+    blake2b_update(&state, note, VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE + EPHEMERAL_PUBLIC_KEY_SIZE);
+    blake2b_final(&state, output, 32);
+#endif
+
+    return parser_ok;
+}
+
+parser_error_t crypto_decrypt_merkle_note(parser_tx_t *txObj, const uint8_t *m_note, const uint8_t ovk[KEY_LENGTH]) {
+    if (ovk == NULL || m_note == NULL) {
+        return parser_no_data;
+    }
+
+    // Calculate the key used to encrypt the shared keys for a note
+    uint8_t encryption_key[32] = {0};
+    CHECK_ERROR(crypto_calculate_key_for_encryption_keys(m_note, ovk, encryption_key));
+    CHECK_APP_CANARY()
+
+    // Decrypt the note encryption keys
+    uint8_t note_encryption_key[ENCRYPTED_SHARED_KEY_SIZE] = {0};
+    uint8_t cc_nonce[CHACHA_NONCE_SIZE] = {0};
+    CHECK_ERROR(chacha(note_encryption_key, sizeof(note_encryption_key), m_note + NOTE_ENCRYPTION_KEYS_OFFSET,
+                       ENCRYPTED_SHARED_KEY_SIZE, encryption_key, cc_nonce, 1));
+#if defined(LEDGER_SPECIFIC)
+        io_seproxyhal_io_heartbeat();
+#endif
+    CHECK_APP_CANARY()
+
+    // Extract public address and secret key from the note encryption key
+    uint8_t public_address[PUBLIC_ADDRESS_SIZE] = {0};
+    uint8_t secret_key[SECRET_KEY_SIZE] = {0};
+    MEMCPY(public_address, note_encryption_key, PUBLIC_ADDRESS_SIZE);
+    MEMCPY(secret_key, note_encryption_key + PUBLIC_ADDRESS_SIZE, SECRET_KEY_SIZE);
+
+    // Compute the shared key
+    uint8_t shared_key[32] = {0};
+    const uint8_t *ephemeral_public_key = m_note + VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE;
+    CHECK_ERROR(shared_secret(secret_key, public_address, ephemeral_public_key, shared_key));
+#if defined(LEDGER_SPECIFIC)
+        io_seproxyhal_io_heartbeat();
+#endif
+    CHECK_APP_CANARY()
+
+    // Finally decrypt the note
+    uint8_t plain_text[ENCRYPTED_NOTE_SIZE] = {0};
+    CHECK_ERROR(chacha(plain_text, sizeof(plain_text), m_note + ENCRYPTED_NOTE_OFFSET, ENCRYPTED_NOTE_SIZE, shared_key,
+                       cc_nonce, 1));
+#if defined(LEDGER_SPECIFIC)
+        io_seproxyhal_io_heartbeat();
+#endif
+    CHECK_APP_CANARY()
+    // Fill the txObj with the decrypted note
+    txObj->outputs.decrypted_note.value = *(uint64_t *)(plain_text + SCALAR_SIZE);
+    MEMCPY(txObj->outputs.decrypted_note.asset_id, plain_text + SCALAR_SIZE + AMOUNT_VALUE_SIZE + MEMO_SIZE,
+           ASSET_ID_LENGTH);
+    MEMCPY(txObj->outputs.decrypted_note.owner, public_address, PUBLIC_ADDRESS_SIZE);
+
+    // Clear sensitive data
+    MEMZERO(note_encryption_key, sizeof(note_encryption_key));
+    MEMZERO(secret_key, sizeof(secret_key));
+    MEMZERO(shared_key, sizeof(shared_key));
+    MEMZERO(plain_text, sizeof(plain_text));
+    return parser_ok;
 }

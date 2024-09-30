@@ -24,6 +24,7 @@ extern "C" {
 #include <stdint.h>
 
 #include "coin.h"
+#include "crypto.h"
 #include "keys_def.h"
 #include "parser_common.h"
 #include "zxerror.h"
@@ -44,11 +45,11 @@ parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t m
                           bool reduceWideByte);
 parser_error_t generate_key(const uint8_t expandedKey[KEY_LENGTH], constant_key_t keyType, uint8_t output[KEY_LENGTH]);
 parser_error_t computeIVK(const ak_t ak, const nk_t nk, ivk_t ivk);
-
+parser_error_t crypto_get_ovk(uint8_t ovk[KEY_LENGTH]);
 parser_error_t transaction_signature_hash(parser_tx_t *txObj, uint8_t output[HASH_LEN]);
 zxerr_t crypto_signRedjubjub(const uint8_t randomizedPrivateKey[KEY_LENGTH], const uint8_t rng[RNG_LEN],
                              const uint8_t transactionHash[HASH_LEN], uint8_t output[REDJUBJUB_SIGNATURE_LEN]);
-
+parser_error_t crypto_decrypt_merkle_note(parser_tx_t *txObj, const uint8_t *m_note, const uint8_t ovk[KEY_LENGTH]);
 #ifdef __cplusplus
 }
 #endif

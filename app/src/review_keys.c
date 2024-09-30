@@ -79,13 +79,15 @@ zxerr_t getItemProofGenerationKey(int8_t displayIdx, char *outKey, uint16_t outK
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "AuthKey");
-            const char *ak = (const char *)G_io_apdu_buffer;
-            pageStringHex(outVal, outValLen, ak, KEY_LENGTH, pageIdx, pageCount);
+            const uint8_t *ak = (const uint8_t *)G_io_apdu_buffer;
+            formatBufferData(ak, KEY_LENGTH, outVal, outValLen, pageIdx, pageCount);
+
             break;
         case 1:
             snprintf(outKey, outKeyLen, "ProofAuthKey");
-            const char *nsk = (const char *)G_io_apdu_buffer + KEY_LENGTH;
-            pageStringHex(outVal, outValLen, nsk, KEY_LENGTH, pageIdx, pageCount);
+            const uint8_t *nsk = (const uint8_t *)G_io_apdu_buffer + KEY_LENGTH;
+            formatBufferData(nsk, KEY_LENGTH, outVal, outValLen, pageIdx, pageCount);
+
             break;
         case 2: {
             snprintf(outKey, outKeyLen, "HD Path");
@@ -118,18 +120,18 @@ zxerr_t getItemViewKey(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "ViewKey");
-            const char *viewKey = (const char *)G_io_apdu_buffer;
-            pageStringHex(outVal, outValLen, viewKey, 2 * KEY_LENGTH, pageIdx, pageCount);
+            const uint8_t *viewKey = (const uint8_t *)G_io_apdu_buffer;
+            formatBufferData(viewKey, 2 * KEY_LENGTH, outVal, outValLen, pageIdx, pageCount);
             break;
         case 1:
             snprintf(outKey, outKeyLen, "IVK");
-            const char *ivk = (const char *)G_io_apdu_buffer + 2 * KEY_LENGTH;
-            pageStringHex(outVal, outValLen, ivk, KEY_LENGTH, pageIdx, pageCount);
+            const uint8_t *ivk = (const uint8_t *)G_io_apdu_buffer + 2 * KEY_LENGTH;
+            formatBufferData(ivk, KEY_LENGTH, outVal, outValLen, pageIdx, pageCount);
             break;
         case 2:
             snprintf(outKey, outKeyLen, "OVK");
-            const char *ovk = (const char *)G_io_apdu_buffer + 3 * KEY_LENGTH;
-            pageStringHex(outVal, outValLen, ovk, KEY_LENGTH, pageIdx, pageCount);
+            const uint8_t *ovk = (const uint8_t *)G_io_apdu_buffer + 3 * KEY_LENGTH;
+            formatBufferData(ovk, KEY_LENGTH, outVal, outValLen, pageIdx, pageCount);
             break;
 
         case 3: {
@@ -148,7 +150,7 @@ zxerr_t getItemViewKey(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char
 }
 
 void review_keys_menu(key_kind_e keyType) {
-    const review_type_e reviewType = keyType == PublicAddress ? REVIEW_ADDRESS : REVIEW_TXN;
+    const review_type_e reviewType = keyType == PublicAddress ? REVIEW_ADDRESS : REVIEW_GENERIC;
 
     void *getItemFunction = NULL;
     void *getNumItemFunction = NULL;

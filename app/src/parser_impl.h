@@ -25,6 +25,8 @@
 extern "C" {
 #endif
 
+#define ELEMENTS_PER_OUTPUT   3
+#define OUTPUT_ELEMENT_OFFSET 1
 /**
  * @brief Checks that there are at least SIZE bytes available in the buffer.
  * @param CTX Context

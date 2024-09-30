@@ -28,6 +28,42 @@ extern "C" {
 #define NAME_LENGTH     32
 #define METADATA_LENGTH 96
 
+// Decrypted Note is composed of:
+// -scaler: 32 bytes
+// -memo: 32 bytes
+// -amount: 8 bytes
+// -asset_id: 32 bytes
+// -public_address (sender): 32 bytes
+#define ENCRYPTED_NOTE_SIZE (SCALAR_SIZE + MEMO_SIZE + AMOUNT_VALUE_SIZE + ASSET_ID_LENGTH + PUBLIC_ADDRESS_SIZE)
+#define SCALAR_SIZE         32
+#define MEMO_SIZE           32
+#define AMOUNT_VALUE_SIZE   8
+#define ASSET_ID_LENGTH     32
+#define PUBLIC_ADDRESS_SIZE 32
+
+// Merkel Note is composed of:
+// - value commitment: 32 bytes
+// - note commitment: 32 bytes
+// - ephemeral public key: 32 bytes
+// - encrypted note: encrypted note size (136) + mac (16) bytes
+// - note encryption keys: encrypted shared key size (64) + mac (16) bytes
+#define VALUE_COMMITMENT_SIZE     32
+#define NOTE_COMMITMENT_SIZE      32
+#define EPHEMERAL_PUBLIC_KEY_SIZE 32
+#define ENCRYPTED_SHARED_KEY_SIZE 64
+#define MAC_SIZE                  16
+#define ENCRYPTED_NOTE_OFFSET     (VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE + EPHEMERAL_PUBLIC_KEY_SIZE)
+#define NOTE_ENCRYPTION_KEYS_OFFSET \
+    (VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE + EPHEMERAL_PUBLIC_KEY_SIZE + ENCRYPTED_NOTE_SIZE + MAC_SIZE)
+
+#define NOTE_ENCRYPTION_KEYS_SIZE (ENCRYPTED_SHARED_KEY_SIZE + MAC_SIZE)
+
+#define MERKLE_NOTE_LEN                                                                                          \
+    (VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE + EPHEMERAL_PUBLIC_KEY_SIZE + ENCRYPTED_NOTE_SIZE + MAC_SIZE + \
+     NOTE_ENCRYPTION_KEYS_SIZE)
+
+#define SECRET_KEY_SIZE   32
+#define CHACHA_NONCE_SIZE 12
 typedef enum {
     V1 = 1,
     V2 = 2,
@@ -88,8 +124,15 @@ typedef struct {
 } vec_burn_description_t;
 
 typedef struct {
+    uint8_t asset_id[32];
+    uint8_t owner[32];
+    uint64_t value;
+} note_t;
+
+typedef struct {
     uint64_t elements;
     bytes_t data;
+    note_t decrypted_note;
 } vec_output_description_t;
 
 typedef struct {
@@ -124,6 +167,7 @@ typedef struct {
     bytes_t randomizedPublicKey;  // redjubjub::PublicKey,
     bytes_t publicKeyRandomness;
 
+    uint8_t ovk[32];
     bytes_t bindingSignature;
 
     // Not part of the incoming txn but it's used to compute signatures

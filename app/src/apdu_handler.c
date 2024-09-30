@@ -164,12 +164,6 @@ __Z_INLINE void handle_getversion(__Z_UNUSED volatile uint32_t *flags, volatile 
     THROW(APDU_CODE_OK);
 }
 
-#if defined(APP_TESTING)
-void handleTest(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-    THROW(APDU_CODE_OK);
-}
-#endif
-
 void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     volatile uint16_t sw = 0;
 
@@ -201,13 +195,6 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     break;
                 }
 
-#if defined(APP_TESTING)
-                case INS_TEST: {
-                    handleTest(flags, tx, rx);
-                    THROW(APDU_CODE_OK);
-                    break;
-                }
-#endif
                 default:
                     THROW(APDU_CODE_INS_NOT_SUPPORTED);
             }

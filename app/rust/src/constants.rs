@@ -63,3 +63,21 @@ pub const PUBLIC_KEY_GENERATOR: AffineNielsPoint = AffinePoint::from_raw_uncheck
     ]),
 )
 .to_niels();
+
+pub const SHARED_KEY_PERSONALIZATION: &[u8; 16] = b"Iron Fish Keyenc";
+pub const DIFFIE_HELLMAN_PERSONALIZATION: &[u8; 16] = b"Iron Fish shared";
+
+pub const AFFINE_POINT_SIZE: usize = 32;
+pub const MAC_SIZE: usize = 16;
+pub const SCALAR_SIZE: usize = 32;
+pub const MEMO_SIZE: usize = 32;
+pub const AMOUNT_VALUE_SIZE: usize = 8;
+pub const ASSET_ID_LENGTH: usize = 32;
+pub const PUBLIC_ADDRESS_SIZE: usize = 32;
+
+pub const ENCRYPTED_NOTE_SIZE: usize =
+    SCALAR_SIZE + MEMO_SIZE + AMOUNT_VALUE_SIZE + ASSET_ID_LENGTH + PUBLIC_ADDRESS_SIZE;
+
+pub const ENCRYPTED_SHARED_KEY_SIZE: usize = 64;
+
+pub const NOTE_ENCRYPTION_KEY_SIZE: usize = ENCRYPTED_SHARED_KEY_SIZE + MAC_SIZE;

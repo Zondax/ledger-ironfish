@@ -19,10 +19,15 @@
 
 use core::panic::PanicInfo;
 
-use constants::{SPENDING_KEY_GENERATOR};
+use constants::{
+    DIFFIE_HELLMAN_PERSONALIZATION, ENCRYPTED_NOTE_SIZE, ENCRYPTED_SHARED_KEY_SIZE, MAC_SIZE,
+    NOTE_ENCRYPTION_KEY_SIZE, SHARED_KEY_PERSONALIZATION, SPENDING_KEY_GENERATOR,
+};
 mod constants;
 
-use jubjub::{Fr, AffinePoint, ExtendedPoint};
+use blake2b_simd::Params as Blake2b;
+//use chacha20poly1305::{ChaCha20Poly1305, Key, KeyInit, Nonce};
+use jubjub::{AffinePoint, ExtendedPoint, Fr};
 
 // ParserError should mirror parser_error_t from parser_common.
 // At the moment, just implement OK or Error
@@ -48,7 +53,11 @@ pub extern "C" fn from_bytes_wide(input: &[u8; 64], output: &mut [u8; 32]) -> Pa
 }
 
 #[no_mangle]
-pub extern "C" fn scalar_multiplication(input: &[u8; 32], key: ConstantKey, output: *mut [u8; 32]) -> ParserError {
+pub extern "C" fn scalar_multiplication(
+    input: &[u8; 32],
+    key: ConstantKey,
+    output: *mut [u8; 32],
+) -> ParserError {
     let key_point = match key {
         ConstantKey::SpendingKeyGenerator => constants::SPENDING_KEY_GENERATOR,
         ConstantKey::ProofGenerationKeyGenerator => constants::PROOF_GENERATION_KEY_GENERATOR,
@@ -67,8 +76,11 @@ pub extern "C" fn scalar_multiplication(input: &[u8; 32], key: ConstantKey, outp
 }
 
 #[no_mangle]
-pub extern "C" fn randomizeKey(key: &[u8; 32], randomness: &[u8; 32], output: &mut [u8; 32]) -> ParserError {
-
+pub extern "C" fn randomizeKey(
+    key: &[u8; 32],
+    randomness: &[u8; 32],
+    output: &mut [u8; 32],
+) -> ParserError {
     let mut skfr = Fr::from_bytes(key).unwrap();
     let alphafr = Fr::from_bytes(randomness).unwrap();
     skfr += alphafr;
@@ -78,7 +90,12 @@ pub extern "C" fn randomizeKey(key: &[u8; 32], randomness: &[u8; 32], output: &m
 }
 
 #[no_mangle]
-pub extern "C" fn compute_sbar( s:  &[u8; 32], r:  &[u8; 32], rsk:  &[u8; 32], sbar:  &mut [u8; 32]) -> ParserError{
+pub extern "C" fn compute_sbar(
+    s: &[u8; 32],
+    r: &[u8; 32],
+    rsk: &[u8; 32],
+    sbar: &mut [u8; 32],
+) -> ParserError {
     let s_point = Fr::from_bytes(s).unwrap();
     let r_point = Fr::from_bytes(r).unwrap();
     let rsk_point = Fr::from_bytes(rsk).unwrap();
@@ -89,6 +106,49 @@ pub extern "C" fn compute_sbar( s:  &[u8; 32], r:  &[u8; 32], rsk:  &[u8; 32], s
     ParserError::ParserOk
 }
 
+#[inline(never)]
+fn hash_shared_secret(shared_secret: &[u8; 32], reference_public_key: &AffinePoint) -> [u8; 32] {
+    let reference_bytes = reference_public_key.to_bytes();
+
+    let mut hasher = Blake2b::new()
+        .hash_length(32)
+        .personal(DIFFIE_HELLMAN_PERSONALIZATION)
+        .to_state();
+
+    hasher.update(&shared_secret[..]);
+    hasher.update(&reference_bytes);
+
+    let mut hash_result = [0; 32];
+    hash_result[..].copy_from_slice(hasher.finalize().as_ref());
+    hash_result
+}
+
+#[no_mangle]
+pub extern "C" fn shared_secret(
+    secret_key: &[u8; 32],
+    other_public_key: &[u8; 32],
+    reference_public_key: &[u8; 32],
+    output: &mut [u8; 32],
+) -> ParserError {
+    let secret_key = Fr::from_bytes(secret_key);
+    if secret_key.is_none().into() {
+        return ParserError::ParserUnexpectedError;
+    }
+    let other_public_key = AffinePoint::from_bytes(*other_public_key);
+    if other_public_key.is_none().into() {
+        return ParserError::ParserUnexpectedError;
+    }
+    let reference_public_key = AffinePoint::from_bytes(*reference_public_key);
+    if reference_public_key.is_none().into() {
+        return ParserError::ParserUnexpectedError;
+    }
+
+    let shared_secret = other_public_key.unwrap() * secret_key.unwrap();
+    let affine = AffinePoint::from(&shared_secret).to_bytes();
+    *output = hash_shared_secret(&affine, &reference_public_key.unwrap());
+
+    ParserError::ParserOk
+}
 
 #[cfg(not(test))]
 #[panic_handler]
