@@ -124,7 +124,12 @@ describe('Standard', function () {
   test.concurrent.each(models)('show view key', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({
+        ...defaultOptions,
+        model: m.name,
+        approveKeyword: isTouchDevice(m.name) ? 'Approve' : '',
+        approveAction: ButtonKind.ApproveTapButton,
+      })
       const app = new IronfishApp(sim.getTransport(), false)
 
       const respRequest = app.retrieveKeys(PATH, IronfishKeys.ViewKey, true)
