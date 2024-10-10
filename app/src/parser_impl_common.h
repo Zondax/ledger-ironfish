@@ -16,9 +16,6 @@
 #pragma once
 
 #include "parser_common.h"
-// #include <zxmacros.h>
-// #include "zxtypes.h"
-// #include "parser_txdef.h"
 
 #ifdef __cplusplus
 extern "C" {
