@@ -235,9 +235,11 @@ parser_error_t crypto_get_ovk(uint8_t ovk[KEY_LENGTH]) {
     uint8_t buffer[4 * KEY_LENGTH] = {0};
 
     if (crypto_generateSaplingKeys(buffer, sizeof(buffer), ViewKeys) != zxerr_ok) {
+        MEMZERO(buffer, sizeof(buffer));
         return parser_unexpected_error;
     }
     memcpy(ovk, buffer + 3 * KEY_LENGTH, KEY_LENGTH);
+    MEMZERO(buffer, sizeof(buffer));
     return parser_ok;
 }
 #endif
@@ -271,43 +273,52 @@ parser_error_t crypto_decrypt_merkle_note(parser_tx_t *txObj, const uint8_t *m_n
     if (ovk == NULL || m_note == NULL) {
         return parser_no_data;
     }
+    uint8_t encryption_key[KEY_LENGTH] = {0};
+    uint8_t note_encryption_key[ENCRYPTED_SHARED_KEY_SIZE] = {0};
+    uint8_t shared_key[KEY_LENGTH] = {0};
+    uint8_t public_address[PUBLIC_ADDRESS_SIZE] = {0};
+    uint8_t secret_key[SECRET_KEY_SIZE] = {0};
+    uint8_t plain_text[ENCRYPTED_NOTE_SIZE] = {0};
 
     // Calculate the key used to encrypt the shared keys for a note
-    uint8_t encryption_key[32] = {0};
-    CHECK_ERROR(crypto_calculate_key_for_encryption_keys(m_note, ovk, encryption_key));
+    if (crypto_calculate_key_for_encryption_keys(m_note, ovk, encryption_key) != parser_ok) {
+        goto cleanup;
+    }
     CHECK_APP_CANARY()
 
     // Decrypt the note encryption keys
-    uint8_t note_encryption_key[ENCRYPTED_SHARED_KEY_SIZE] = {0};
     uint8_t cc_nonce[CHACHA_NONCE_SIZE] = {0};
-    CHECK_ERROR(chacha(note_encryption_key, sizeof(note_encryption_key), m_note + NOTE_ENCRYPTION_KEYS_OFFSET,
-                       ENCRYPTED_SHARED_KEY_SIZE, encryption_key, cc_nonce, 1));
+    if (chacha(note_encryption_key, sizeof(note_encryption_key), m_note + NOTE_ENCRYPTION_KEYS_OFFSET,
+               ENCRYPTED_SHARED_KEY_SIZE, encryption_key, cc_nonce, 1) != parser_ok) {
+        goto cleanup;
+    }
 #if defined(LEDGER_SPECIFIC)
-        io_seproxyhal_io_heartbeat();
+    io_seproxyhal_io_heartbeat();
 #endif
     CHECK_APP_CANARY()
 
     // Extract public address and secret key from the note encryption key
-    uint8_t public_address[PUBLIC_ADDRESS_SIZE] = {0};
-    uint8_t secret_key[SECRET_KEY_SIZE] = {0};
     MEMCPY(public_address, note_encryption_key, PUBLIC_ADDRESS_SIZE);
     MEMCPY(secret_key, note_encryption_key + PUBLIC_ADDRESS_SIZE, SECRET_KEY_SIZE);
 
     // Compute the shared key
-    uint8_t shared_key[32] = {0};
+
     const uint8_t *ephemeral_public_key = m_note + VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE;
-    CHECK_ERROR(shared_secret(secret_key, public_address, ephemeral_public_key, shared_key));
+    if (shared_secret(secret_key, public_address, ephemeral_public_key, shared_key) != parser_ok) {
+        goto cleanup;
+    }
 #if defined(LEDGER_SPECIFIC)
-        io_seproxyhal_io_heartbeat();
+    io_seproxyhal_io_heartbeat();
 #endif
     CHECK_APP_CANARY()
 
     // Finally decrypt the note
-    uint8_t plain_text[ENCRYPTED_NOTE_SIZE] = {0};
-    CHECK_ERROR(chacha(plain_text, sizeof(plain_text), m_note + ENCRYPTED_NOTE_OFFSET, ENCRYPTED_NOTE_SIZE, shared_key,
-                       cc_nonce, 1));
+    if (chacha(plain_text, sizeof(plain_text), m_note + ENCRYPTED_NOTE_OFFSET, ENCRYPTED_NOTE_SIZE, shared_key, cc_nonce,
+               1) != parser_ok) {
+        goto cleanup;
+    }
 #if defined(LEDGER_SPECIFIC)
-        io_seproxyhal_io_heartbeat();
+    io_seproxyhal_io_heartbeat();
 #endif
     CHECK_APP_CANARY()
     // Fill the txObj with the decrypted note
@@ -316,7 +327,9 @@ parser_error_t crypto_decrypt_merkle_note(parser_tx_t *txObj, const uint8_t *m_n
            ASSET_ID_LENGTH);
     MEMCPY(txObj->outputs.decrypted_note.owner, public_address, PUBLIC_ADDRESS_SIZE);
 
+cleanup:
     // Clear sensitive data
+    MEMZERO(encryption_key, sizeof(encryption_key));
     MEMZERO(note_encryption_key, sizeof(note_encryption_key));
     MEMZERO(secret_key, sizeof(secret_key));
     MEMZERO(shared_key, sizeof(shared_key));
