@@ -17,6 +17,10 @@ parser_error_t compute_sbar(const uint8_t s[KEY_LENGTH], const uint8_t r[KEY_LEN
                             uint8_t sbar[32]);
 parser_error_t shared_secret(uint8_t secret_key[32], uint8_t other_public_key[32], const uint8_t reference_public_key[32],
                              uint8_t output[32]);
+parser_error_t decrypt_note_encryption_keys(const uint8_t key[KEY_LENGTH], const uint8_t note_encryption_keys[80],
+                                            uint8_t output[ENCRYPTED_SHARED_KEY_SIZE]);
+parser_error_t decrypt_note(const uint8_t key[KEY_LENGTH], const uint8_t note[ENCRYPTED_NOTE_SIZE + MAC_SIZE],
+                            uint8_t output[ENCRYPTED_NOTE_SIZE]);
 #ifdef __cplusplus
 }
 #endif

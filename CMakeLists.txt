@@ -137,7 +137,6 @@ file(GLOB_RECURSE LIB_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_impl.c
     ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_impl_common.c
     ${CMAKE_CURRENT_SOURCE_DIR}/app/src/crypto_helper.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/app/src/crypto_helper/chacha.c
 
     # ###
     ${CMAKE_CURRENT_SOURCE_DIR}/deps/blake2/ref/blake2b-ref.c
@@ -150,7 +149,6 @@ target_include_directories(app_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/include
     ${CMAKE_CURRENT_SOURCE_DIR}/app/src
     ${CMAKE_CURRENT_SOURCE_DIR}/app/src/lib
-    ${CMAKE_CURRENT_SOURCE_DIR}/app/src/crypto_helper
     ${CMAKE_CURRENT_SOURCE_DIR}/app/src/common
     ${CMAKE_CURRENT_SOURCE_DIR}/app/rust/include
     ${CMAKE_CURRENT_SOURCE_DIR}/deps/blake2/ref

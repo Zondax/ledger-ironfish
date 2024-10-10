@@ -19,9 +19,11 @@
 
 use core::panic::PanicInfo;
 
+use chacha20poly1305::{aead::generic_array::GenericArray, ChaCha20Poly1305, Key, KeyInit, Nonce};
 use constants::{
-    DIFFIE_HELLMAN_PERSONALIZATION, ENCRYPTED_NOTE_SIZE, ENCRYPTED_SHARED_KEY_SIZE, MAC_SIZE,
-    NOTE_ENCRYPTION_KEY_SIZE, SHARED_KEY_PERSONALIZATION, SPENDING_KEY_GENERATOR,
+    DIFFIE_HELLMAN_PERSONALIZATION, ENCRYPTED_NOTE_SIZE, ENCRYPTED_SHARED_KEY_SIZE,
+    EPHEMEREAL_PUBLIC_KEY_SIZE, MAC_SIZE, NOTE_ENCRYPTION_KEY_SIZE, SHARED_KEY_PERSONALIZATION,
+    SPENDING_KEY_GENERATOR,
 };
 mod constants;
 
@@ -148,6 +150,52 @@ pub extern "C" fn shared_secret(
     *output = hash_shared_secret(&affine, &reference_public_key.unwrap());
 
     ParserError::ParserOk
+}
+
+fn decrypt<const SIZE: usize>(
+    key: &[u8; 32],
+    ciphertext: &[u8],
+    plaintext: &mut [u8; SIZE],
+) -> ParserError {
+    use chacha20poly1305::AeadInPlace;
+
+    // Check if the ciphertext length is sufficient
+    if ciphertext.len() < SIZE {
+        return ParserError::ParserUnexpectedError; // Return an error if insufficient data
+    }
+
+    let decryptor = ChaCha20Poly1305::new(Key::from_slice(key));
+
+    plaintext.copy_from_slice(&ciphertext[..SIZE]);
+
+    // Attempt decryption
+    match decryptor.decrypt_in_place_detached(
+        &Nonce::default(),
+        &[],
+        plaintext,
+        ciphertext[SIZE..].into(),
+    ) {
+        Ok(_) => ParserError::ParserOk,
+        Err(_) => ParserError::ParserUnexpectedError, // Handle decryption failure
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn decrypt_note_encryption_keys(
+    key: &[u8; 32],
+    ciphertext: &[u8; NOTE_ENCRYPTION_KEY_SIZE],
+    output: &mut [u8; ENCRYPTED_SHARED_KEY_SIZE],
+) -> ParserError {
+    decrypt::<ENCRYPTED_SHARED_KEY_SIZE>(key, ciphertext, output)
+}
+
+#[no_mangle]
+pub extern "C" fn decrypt_note(
+    shared_key: &[u8; 32],
+    ciphertext: &[u8; ENCRYPTED_NOTE_SIZE + MAC_SIZE],
+    output: &mut [u8; ENCRYPTED_NOTE_SIZE],
+) -> ParserError {
+    decrypt::<ENCRYPTED_NOTE_SIZE>(shared_key, ciphertext, output)
 }
 
 #[cfg(not(test))]

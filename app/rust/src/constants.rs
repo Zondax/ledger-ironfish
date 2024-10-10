@@ -74,7 +74,7 @@ pub const MEMO_SIZE: usize = 32;
 pub const AMOUNT_VALUE_SIZE: usize = 8;
 pub const ASSET_ID_LENGTH: usize = 32;
 pub const PUBLIC_ADDRESS_SIZE: usize = 32;
-
+pub const EPHEMEREAL_PUBLIC_KEY_SIZE: usize = 32;
 pub const ENCRYPTED_NOTE_SIZE: usize =
     SCALAR_SIZE + MEMO_SIZE + AMOUNT_VALUE_SIZE + ASSET_ID_LENGTH + PUBLIC_ADDRESS_SIZE;
 

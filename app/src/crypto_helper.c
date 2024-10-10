@@ -18,7 +18,6 @@
 #include <string.h>
 
 #include "coin.h"
-#include "crypto_helper/chacha.h"
 #include "keys_personalizations.h"
 #include "rslib.h"
 #include "zxformat.h"
@@ -271,12 +270,7 @@ parser_error_t crypto_decrypt_merkle_note(parser_tx_t *txObj, const uint8_t *m_n
 
     // Decrypt the note encryption keys
     uint8_t note_encryption_key[ENCRYPTED_SHARED_KEY_SIZE] = {0};
-    uint8_t cc_nonce[CHACHA_NONCE_SIZE] = {0};
-    CHECK_ERROR(chacha(note_encryption_key, sizeof(note_encryption_key), m_note + NOTE_ENCRYPTION_KEYS_OFFSET,
-                       ENCRYPTED_SHARED_KEY_SIZE, encryption_key, cc_nonce, 1));
-#if defined(LEDGER_SPECIFIC)
-        io_seproxyhal_io_heartbeat();
-#endif
+    CHECK_ERROR(decrypt_note_encryption_keys(encryption_key, m_note + NOTE_ENCRYPTION_KEYS_OFFSET, note_encryption_key));
     CHECK_APP_CANARY()
 
     // Extract public address and secret key from the note encryption key
@@ -289,17 +283,14 @@ parser_error_t crypto_decrypt_merkle_note(parser_tx_t *txObj, const uint8_t *m_n
     uint8_t shared_key[32] = {0};
     const uint8_t *ephemeral_public_key = m_note + VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE;
     CHECK_ERROR(shared_secret(secret_key, public_address, ephemeral_public_key, shared_key));
-#if defined(LEDGER_SPECIFIC)
-        io_seproxyhal_io_heartbeat();
-#endif
     CHECK_APP_CANARY()
 
     // Finally decrypt the note
     uint8_t plain_text[ENCRYPTED_NOTE_SIZE] = {0};
-    CHECK_ERROR(chacha(plain_text, sizeof(plain_text), m_note + ENCRYPTED_NOTE_OFFSET, ENCRYPTED_NOTE_SIZE, shared_key,
-                       cc_nonce, 1));
+    CHECK_ERROR(decrypt_note(shared_key, m_note + ENCRYPTED_NOTE_OFFSET, plain_text));
+
 #if defined(LEDGER_SPECIFIC)
-        io_seproxyhal_io_heartbeat();
+    io_seproxyhal_io_heartbeat();
 #endif
     CHECK_APP_CANARY()
     // Fill the txObj with the decrypted note
