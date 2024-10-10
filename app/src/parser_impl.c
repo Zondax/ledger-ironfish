@@ -81,7 +81,7 @@ static parser_error_t readMints(parser_context_t *ctx, vec_mint_description_t *m
         if (txnVersion == V1) {
             // Owner field only available for V2
             CHECK_ERROR(readBytes(ctx, &tmpPtr, MINTLEN - 32 + REDJUBJUB_SIGNATURE_LEN));
-            mints->data.len += MINTLEN + REDJUBJUB_SIGNATURE_LEN;
+            mints->data.len += MINTLEN + REDJUBJUB_SIGNATURE_LEN - 32;
         } else {
             CTX_CHECK_AVAIL(ctx, (MINTLEN + 1));
             const uint8_t transferOwnershipToLen = mints->data.ptr[MINTLEN] == 1 ? 33 : 1;
