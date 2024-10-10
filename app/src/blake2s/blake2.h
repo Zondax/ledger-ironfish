@@ -55,16 +55,15 @@ typedef struct blake2sp_state__ {
 } blake2sp_state;
 
 BLAKE2_PACKED(struct blake2s_param__ {
-    uint8_t digest_length; /* 1 */
-    uint8_t key_length;    /* 2 */
-    uint8_t fanout;        /* 3 */
-    uint8_t depth;         /* 4 */
-    uint32_t leaf_length;  /* 8 */
-    uint32_t node_offset;  /* 12 */
-    uint16_t xof_length;   /* 14 */
-    uint8_t node_depth;    /* 15 */
-    uint8_t inner_length;  /* 16 */
-    /* uint8_t  reserved[0]; */
+    uint8_t digest_length;                   /* 1 */
+    uint8_t key_length;                      /* 2 */
+    uint8_t fanout;                          /* 3 */
+    uint8_t depth;                           /* 4 */
+    uint32_t leaf_length;                    /* 8 */
+    uint32_t node_offset;                    /* 12 */
+    uint16_t xof_length;                     /* 14 */
+    uint8_t node_depth;                      /* 15 */
+    uint8_t inner_length;                    /* 16 */
     uint8_t salt[BLAKE2S_SALTBYTES];         /* 24 */
     uint8_t personal[BLAKE2S_PERSONALBYTES]; /* 32 */
 });
@@ -81,7 +80,6 @@ typedef struct blake2xs_state__ {
 /* Padded structs result in a compile-time error */
 enum {
     BLAKE2_DUMMY_1 = 1 / (int)(sizeof(blake2s_param) == BLAKE2S_OUTBYTES),
-    // BLAKE2_DUMMY_2 = 1/(int)(sizeof(blake2b_param) == BLAKE2B_OUTBYTES)
 };
 
 /* Streaming API */
