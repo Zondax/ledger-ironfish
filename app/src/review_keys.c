@@ -40,8 +40,6 @@ zxerr_t getNumItemsPublicAddress(uint8_t *num_items) {
 
 zxerr_t getItemPublicAddress(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
                              uint8_t pageIdx, uint8_t *pageCount) {
-    ZEMU_LOGF(50, "[addr_getItem] %d/%d\n", displayIdx, pageIdx)
-
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "Address");
@@ -74,8 +72,6 @@ zxerr_t getNumItemsProofGenerationKey(uint8_t *num_items) {
 
 zxerr_t getItemProofGenerationKey(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
                                   uint8_t pageIdx, uint8_t *pageCount) {
-    ZEMU_LOGF(50, "[addr_getItem] %d/%d\n", displayIdx, pageIdx)
-
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "AuthKey");
@@ -115,8 +111,6 @@ zxerr_t getNumItemsViewKey(uint8_t *num_items) {
 
 zxerr_t getItemViewKey(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
                        uint8_t pageIdx, uint8_t *pageCount) {
-    ZEMU_LOGF(50, "[addr_getItem] %d/%d\n", displayIdx, pageIdx)
-
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "ViewKey");
