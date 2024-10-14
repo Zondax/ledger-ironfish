@@ -91,6 +91,7 @@ static parser_error_t checkSanity(uint8_t numItems, uint8_t displayIdx) {
 }
 
 uint8_t out_idx = 0;
+uint8_t prev_decrypted_out_idx = 0;
 parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
     UNUSED(pageIdx);
@@ -105,53 +106,55 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
     uint64_t total_out_elements = ctx->tx_obj->outputs.elements * ELEMENTS_PER_OUTPUT;
     uint8_t tmp_idx = displayIdx;
 
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Tx Version");
+        snprintf(outVal, outValLen, "V%d", (uint8_t)ctx->tx_obj->transactionVersion);
+        return parser_ok;
+    }
+
     if (tmp_idx > 0 && tmp_idx <= total_out_elements) {
         tmp_idx = (displayIdx % ELEMENTS_PER_OUTPUT);
         out_idx = (displayIdx / ELEMENTS_PER_OUTPUT);
-        if (tmp_idx == 0) {
-            tmp_idx = ELEMENTS_PER_OUTPUT;
-            out_idx--;
-            if (out_idx > ctx->tx_obj->outputs.elements - 1) {
-                return parser_display_idx_out_of_range;
-            }
+
+        if (tmp_idx == 1 || tmp_idx == 2) {
+            out_idx++;
         }
-        if (tmp_idx == 1) {
-            const uint8_t *output = ctx->tx_obj->outputs.data.ptr + (out_idx * (192 + 328));
-            if (pageIdx == 0) {
-                CHECK_ERROR(crypto_decrypt_merkle_note(ctx->tx_obj, output + 192, ctx->tx_obj->ovk));
-            }
+
+        if (prev_decrypted_out_idx != out_idx) {
+            const uint8_t *output = ctx->tx_obj->outputs.data.ptr + ((out_idx - 1) * (192 + 328));
+            CHECK_ERROR(crypto_decrypt_merkle_note(ctx->tx_obj, output + 192, ctx->tx_obj->ovk));
+            prev_decrypted_out_idx = out_idx;
         }
     } else if (tmp_idx > total_out_elements) {
-        tmp_idx -= total_out_elements - ELEMENTS_PER_OUTPUT;
+        tmp_idx -= total_out_elements - ELEMENTS_PER_OUTPUT + 1;
     }
 
     char buf[70] = {0};
     switch (tmp_idx) {
         case 0:
-            snprintf(outKey, outKeyLen, "Tx Version");
-            snprintf(outVal, outValLen, "V%d", (uint8_t)ctx->tx_obj->transactionVersion);
+            snprintf(outKey, outKeyLen, "AssetID %d", out_idx);
+            array_to_hexstr(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.asset_id, 32);
+            pageString(outVal, outValLen, buf, pageIdx, pageCount);
             return parser_ok;
         case 1:
-            snprintf(outKey, outKeyLen, "Owner %d", out_idx + 1);
+            snprintf(outKey, outKeyLen, "Owner %d", out_idx);
             array_to_hexstr(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.owner, 32);
             pageString(outVal, outValLen, buf, pageIdx, pageCount);
             return parser_ok;
         case 2:
-            snprintf(outKey, outKeyLen, "Amount %d", out_idx + 1);
-            snprintf(outVal, outValLen, "%d", (uint8_t)ctx->tx_obj->outputs.decrypted_note.value);
+            snprintf(outKey, outKeyLen, "Amount %d", out_idx);
+            uint64_to_str(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.value);
+            pageString(outVal, outValLen, buf, pageIdx, pageCount);
             return parser_ok;
         case 3:
-            snprintf(outKey, outKeyLen, "AssetID %d", out_idx + 1);
-            array_to_hexstr(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.asset_id, 32);
+            snprintf(outKey, outKeyLen, "Fee");
+            uint64_to_str(buf, sizeof(buf), ctx->tx_obj->fee);
             pageString(outVal, outValLen, buf, pageIdx, pageCount);
             return parser_ok;
         case 4:
-            snprintf(outKey, outKeyLen, "Fee");
-            snprintf(outVal, outValLen, "%d", (uint8_t)ctx->tx_obj->fee);
-            return parser_ok;
-        case 5:
             snprintf(outKey, outKeyLen, "Expiration");
-            snprintf(outVal, outValLen, "%d", ctx->tx_obj->expiration);
+            uint32_to_str(buf, sizeof(buf), ctx->tx_obj->expiration);
+            pageString(outVal, outValLen, buf, pageIdx, pageCount);
             return parser_ok;
         default:
             break;

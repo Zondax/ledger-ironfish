@@ -120,7 +120,7 @@ void check_testcase(const testcase_t &tc, bool expert_mode) {
 }
 
 INSTANTIATE_TEST_SUITE_P
-
+    // Testcases generated from ironfish dkg app, using BuildTx() from utils.tx in zemu_tests
     (JsonTestCasesCurrentTxVer, JsonTestsA, ::testing::ValuesIn(GetJsonTestCases("testcases.json")),
      JsonTestsA::PrintToStringParamName());
 TEST_P(JsonTestsA, CheckUIOutput_CurrentTX_Expert) {
