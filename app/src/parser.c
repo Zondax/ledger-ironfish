@@ -143,16 +143,18 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
             return parser_ok;
         case 2:
             snprintf(outKey, outKeyLen, "Amount %d", out_idx);
-            snprintf(outVal, outValLen, "%d", (uint8_t)ctx->tx_obj->outputs.decrypted_note.value);
+            uint64_to_str(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.value);
             pageString(outVal, outValLen, buf, pageIdx, pageCount);
             return parser_ok;
         case 3:
             snprintf(outKey, outKeyLen, "Fee");
-            snprintf(outVal, outValLen, "%d", (uint8_t)ctx->tx_obj->fee);
+            uint64_to_str(buf, sizeof(buf), ctx->tx_obj->fee);
+            pageString(outVal, outValLen, buf, pageIdx, pageCount);
             return parser_ok;
         case 4:
             snprintf(outKey, outKeyLen, "Expiration");
-            snprintf(outVal, outValLen, "%d", ctx->tx_obj->expiration);
+            uint32_to_str(buf, sizeof(buf), ctx->tx_obj->expiration);
+            pageString(outVal, outValLen, buf, pageIdx, pageCount);
             return parser_ok;
         default:
             break;
