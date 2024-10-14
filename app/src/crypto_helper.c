@@ -231,9 +231,11 @@ parser_error_t crypto_get_ovk(uint8_t ovk[KEY_LENGTH]) {
     uint8_t buffer[4 * KEY_LENGTH] = {0};
 
     if (crypto_generateSaplingKeys(buffer, sizeof(buffer), ViewKeys) != zxerr_ok) {
+        MEMZERO(buffer, sizeof(buffer));
         return parser_unexpected_error;
     }
     memcpy(ovk, buffer + 3 * KEY_LENGTH, KEY_LENGTH);
+    MEMZERO(buffer, sizeof(buffer));
     return parser_ok;
 }
 #endif
@@ -244,12 +246,19 @@ parser_error_t crypto_decrypt_merkle_note(parser_tx_t *txObj, const uint8_t *m_n
     }
 
     uint8_t note_encryption_key[ENCRYPTED_SHARED_KEY_SIZE] = {0};
-    CHECK_ERROR(decrypt_note_encryption_keys(ovk, m_note, note_encryption_key));
+    if (decrypt_note_encryption_keys(ovk, m_note, note_encryption_key) != parser_ok) {
+        MEMZERO(note_encryption_key, sizeof(note_encryption_key));
+        return parser_unexpected_error;
+    }
 
     uint8_t plain_text[ENCRYPTED_NOTE_SIZE] = {0};
     const uint8_t *ephemeral_public_key = m_note + VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE;
-    CHECK_ERROR(decrypt_note(m_note, note_encryption_key + PUBLIC_ADDRESS_SIZE, note_encryption_key, ephemeral_public_key,
-                             plain_text));
+    if (decrypt_note(m_note, note_encryption_key + PUBLIC_ADDRESS_SIZE, note_encryption_key, ephemeral_public_key,
+                             plain_text) != parser_ok) {
+        MEMZERO(note_encryption_key, sizeof(note_encryption_key));
+        MEMZERO(plain_text, sizeof(plain_text));
+        return parser_unexpected_error;
+    }
 
     txObj->outputs.decrypted_note.value = *(uint64_t *)(plain_text + SCALAR_SIZE);
     MEMCPY(txObj->outputs.decrypted_note.asset_id, plain_text + SCALAR_SIZE + AMOUNT_VALUE_SIZE + MEMO_SIZE,
