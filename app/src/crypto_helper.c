@@ -28,6 +28,14 @@
 #endif
 #include "blake2.h"
 
+#define CHECK_PARSER_OK(CALL)           \
+    do {                                \
+        parser_error_t __cx_err = CALL; \
+        if (__cx_err != parser_ok) {    \
+            return zxerr_unknown;       \
+        }                               \
+    } while (0)
+
 parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t modifier, uint8_t outputKey[KEY_LENGTH],
                           bool reduceWideByte) {
     uint8_t output[64] = {0};
@@ -37,7 +45,7 @@ parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t m
                                            sizeof(EXPANDED_SPEND_BLAKE2_KEY)));
     ASSERT_CX_OK(cx_blake2b_update(&ctx, spendingKey, KEY_LENGTH));
     ASSERT_CX_OK(cx_blake2b_update(&ctx, &modifier, 1));
-    cx_blake2b_final(&ctx, output);
+    ASSERT_CX_OK(cx_blake2b_final(&ctx, output));
 #else
     blake2b_state state = {0};
     blake2b_init_with_personalization(&state, BLAKE2B_OUTPUT_LEN, (const uint8_t *)EXPANDED_SPEND_BLAKE2_KEY,
@@ -48,7 +56,7 @@ parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t m
 #endif
 
     if (reduceWideByte) {
-        from_bytes_wide(output, outputKey);
+        CHECK_ERROR(from_bytes_wide(output, outputKey));
     } else {
         memcpy(outputKey, output, KEY_LENGTH);
     }
@@ -59,7 +67,7 @@ parser_error_t generate_key(const uint8_t expandedKey[KEY_LENGTH], constant_key_
     if (keyType >= PointInvalidKey) {
         return parser_value_out_of_range;
     }
-    scalar_multiplication(expandedKey, keyType, output);
+    CHECK_ERROR(scalar_multiplication(expandedKey, keyType, output));
     return parser_ok;
 }
 
@@ -71,9 +79,6 @@ parser_error_t computeIVK(const ak_t ak, const nk_t nk, ivk_t ivk) {
     blake2s_final(&state, ivk, KEY_LENGTH);
 
     ivk[31] &= 0x07;
-    // if ivk == [0; 32] {
-    //     return Err(IronfishError::new(IronfishErrorKind::InvalidViewingKey));
-    // }
     return parser_ok;
 }
 
@@ -177,7 +182,7 @@ static parser_error_t h_star(bytes_t a, const uint8_t randomizedPublicKey[32], c
     ASSERT_CX_OK(cx_blake2b_update(&ctx, a.ptr, a.len));
     ASSERT_CX_OK(cx_blake2b_update(&ctx, randomizedPublicKey, 32));
     ASSERT_CX_OK(cx_blake2b_update(&ctx, transactionHash, 32));
-    cx_blake2b_final(&ctx, hash);
+    ASSERT_CX_OK(cx_blake2b_final(&ctx, hash));
 #else
     blake2b_state state = {0};
     blake2b_init_with_personalization(&state, BLAKE2B_OUTPUT_LEN, (const uint8_t *)SIGNING_REDJUBJUB,
@@ -205,15 +210,15 @@ zxerr_t crypto_signRedjubjub(const uint8_t randomizedPrivateKey[KEY_LENGTH], con
     // Compute r and rbar
     uint8_t r[32] = {0};
     bytes_t a = {.ptr = rng, .len = RNG_LEN};
-    h_star(a, randomizedPublicKey, transactionHash, r);
-    scalar_multiplication(r, SpendingKeyGenerator, rbar);
+    CHECK_PARSER_OK(h_star(a, randomizedPublicKey, transactionHash, r));
+    CHECK_PARSER_OK(scalar_multiplication(r, SpendingKeyGenerator, rbar));
 
     // compute s and sbar
     uint8_t s[32] = {0};
     a.ptr = rbar;
     a.len = 32;
-    h_star(a, randomizedPublicKey, transactionHash, s);
-    compute_sbar(s, r, randomizedPrivateKey, sbar);
+    CHECK_PARSER_OK(h_star(a, randomizedPublicKey, transactionHash, s));
+    CHECK_PARSER_OK(compute_sbar(s, r, randomizedPrivateKey, sbar));
 
     MEMZERO(r, sizeof(r));
     MEMZERO(s, sizeof(s));
@@ -226,9 +231,11 @@ parser_error_t crypto_get_ovk(uint8_t ovk[KEY_LENGTH]) {
     uint8_t buffer[4 * KEY_LENGTH] = {0};
 
     if (crypto_generateSaplingKeys(buffer, sizeof(buffer), ViewKeys) != zxerr_ok) {
+        MEMZERO(buffer, sizeof(buffer));
         return parser_unexpected_error;
     }
     memcpy(ovk, buffer + 3 * KEY_LENGTH, KEY_LENGTH);
+    MEMZERO(buffer, sizeof(buffer));
     return parser_ok;
 }
 #endif
@@ -239,12 +246,19 @@ parser_error_t crypto_decrypt_merkle_note(parser_tx_t *txObj, const uint8_t *m_n
     }
 
     uint8_t note_encryption_key[ENCRYPTED_SHARED_KEY_SIZE] = {0};
-    CHECK_ERROR(decrypt_note_encryption_keys(ovk, m_note, note_encryption_key));
+    if (decrypt_note_encryption_keys(ovk, m_note, note_encryption_key) != parser_ok) {
+        MEMZERO(note_encryption_key, sizeof(note_encryption_key));
+        return parser_unexpected_error;
+    }
 
     uint8_t plain_text[ENCRYPTED_NOTE_SIZE] = {0};
     const uint8_t *ephemeral_public_key = m_note + VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE;
-    CHECK_ERROR(decrypt_note(m_note, note_encryption_key + PUBLIC_ADDRESS_SIZE, note_encryption_key, ephemeral_public_key,
-                             plain_text));
+    if (decrypt_note(m_note, note_encryption_key + PUBLIC_ADDRESS_SIZE, note_encryption_key, ephemeral_public_key,
+                             plain_text) != parser_ok) {
+        MEMZERO(note_encryption_key, sizeof(note_encryption_key));
+        MEMZERO(plain_text, sizeof(plain_text));
+        return parser_unexpected_error;
+    }
 
     txObj->outputs.decrypted_note.value = *(uint64_t *)(plain_text + SCALAR_SIZE);
     MEMCPY(txObj->outputs.decrypted_note.asset_id, plain_text + SCALAR_SIZE + AMOUNT_VALUE_SIZE + MEMO_SIZE,

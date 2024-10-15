@@ -90,7 +90,6 @@ int blake2s_init(blake2s_state *S, size_t outlen) {
     store16(&P->xof_length, 0);
     P->node_depth = 0;
     P->inner_length = 0;
-    /* memset(P->reserved, 0, sizeof(P->reserved) ); */
     memset(P->salt, 0, sizeof(P->salt));
     memset(P->personal, 0, sizeof(P->personal));
     return blake2s_init_param(S, P);
@@ -114,7 +113,6 @@ int blake2s_init_with_personalization(blake2s_state *S, size_t outlen, const uin
     store16(&P->xof_length, 0);
     P->node_depth = 0;
     P->inner_length = 0;
-    /* memset(P->reserved, 0, sizeof(P->reserved) ); */
     memset(P->salt, 0, sizeof(P->salt));
     memset(P->personal, 0, sizeof(P->personal));
     memcpy(P->personal, personalization, personalizationlen);
@@ -138,7 +136,6 @@ int blake2s_init_key(blake2s_state *S, size_t outlen, const void *key, size_t ke
     store16(&P->xof_length, 0);
     P->node_depth = 0;
     P->inner_length = 0;
-    /* memset(P->reserved, 0, sizeof(P->reserved) ); */
     memset(P->salt, 0, sizeof(P->salt));
     memset(P->personal, 0, sizeof(P->personal));
 
