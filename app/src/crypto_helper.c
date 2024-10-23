@@ -18,10 +18,10 @@
 #include <string.h>
 
 #include "coin.h"
-#include "crypto_helper/chacha.h"
 #include "keys_personalizations.h"
 #include "rslib.h"
 #include "zxformat.h"
+#include "parser_common.h"
 
 #if defined(LEDGER_SPECIFIC)
 #include "cx.h"
@@ -38,7 +38,7 @@ parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t m
                                            sizeof(EXPANDED_SPEND_BLAKE2_KEY)));
     ASSERT_CX_OK(cx_blake2b_update(&ctx, spendingKey, KEY_LENGTH));
     ASSERT_CX_OK(cx_blake2b_update(&ctx, &modifier, 1));
-    cx_blake2b_final(&ctx, output);
+    ASSERT_CX_OK(cx_blake2b_final(&ctx, output));
 #else
     blake2b_state state = {0};
     blake2b_init_with_personalization(&state, BLAKE2B_OUTPUT_LEN, (const uint8_t *)EXPANDED_SPEND_BLAKE2_KEY,
@@ -49,7 +49,7 @@ parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t m
 #endif
 
     if (reduceWideByte) {
-        from_bytes_wide(output, outputKey);
+        CHECK_ERROR(from_bytes_wide(output, outputKey));
     } else {
         memcpy(outputKey, output, KEY_LENGTH);
     }
@@ -60,7 +60,7 @@ parser_error_t generate_key(const uint8_t expandedKey[KEY_LENGTH], constant_key_
     if (keyType >= PointInvalidKey) {
         return parser_value_out_of_range;
     }
-    scalar_multiplication(expandedKey, keyType, output);
+    CHECK_ERROR(scalar_multiplication(expandedKey, keyType, output));
     return parser_ok;
 }
 
@@ -72,9 +72,6 @@ parser_error_t computeIVK(const ak_t ak, const nk_t nk, ivk_t ivk) {
     blake2s_final(&state, ivk, KEY_LENGTH);
 
     ivk[31] &= 0x07;
-    // if ivk == [0; 32] {
-    //     return Err(IronfishError::new(IronfishErrorKind::InvalidViewingKey));
-    // }
     return parser_ok;
 }
 
@@ -178,7 +175,7 @@ static parser_error_t h_star(bytes_t a, const uint8_t randomizedPublicKey[32], c
     ASSERT_CX_OK(cx_blake2b_update(&ctx, a.ptr, a.len));
     ASSERT_CX_OK(cx_blake2b_update(&ctx, randomizedPublicKey, 32));
     ASSERT_CX_OK(cx_blake2b_update(&ctx, transactionHash, 32));
-    cx_blake2b_final(&ctx, hash);
+    ASSERT_CX_OK(cx_blake2b_final(&ctx, hash));
 #else
     blake2b_state state = {0};
     blake2b_init_with_personalization(&state, BLAKE2B_OUTPUT_LEN, (const uint8_t *)SIGNING_REDJUBJUB,
@@ -206,15 +203,15 @@ zxerr_t crypto_signRedjubjub(const uint8_t randomizedPrivateKey[KEY_LENGTH], con
     // Compute r and rbar
     uint8_t r[32] = {0};
     bytes_t a = {.ptr = rng, .len = RNG_LEN};
-    h_star(a, randomizedPublicKey, transactionHash, r);
-    scalar_multiplication(r, SpendingKeyGenerator, rbar);
+    CHECK_PARSER_OK(h_star(a, randomizedPublicKey, transactionHash, r));
+    CHECK_PARSER_OK(scalar_multiplication(r, SpendingKeyGenerator, rbar));
 
     // compute s and sbar
     uint8_t s[32] = {0};
     a.ptr = rbar;
     a.len = 32;
-    h_star(a, randomizedPublicKey, transactionHash, s);
-    compute_sbar(s, r, randomizedPrivateKey, sbar);
+    CHECK_PARSER_OK(h_star(a, randomizedPublicKey, transactionHash, s));
+    CHECK_PARSER_OK(compute_sbar(s, r, randomizedPrivateKey, sbar));
 
     MEMZERO(r, sizeof(r));
     MEMZERO(s, sizeof(s));
@@ -227,91 +224,42 @@ parser_error_t crypto_get_ovk(uint8_t ovk[KEY_LENGTH]) {
     uint8_t buffer[4 * KEY_LENGTH] = {0};
 
     if (crypto_generateSaplingKeys(buffer, sizeof(buffer), ViewKeys) != zxerr_ok) {
+        MEMZERO(buffer, sizeof(buffer));
         return parser_unexpected_error;
     }
     memcpy(ovk, buffer + 3 * KEY_LENGTH, KEY_LENGTH);
+    MEMZERO(buffer, sizeof(buffer));
     return parser_ok;
 }
 #endif
-
-parser_error_t crypto_calculate_key_for_encryption_keys(const uint8_t *note, const uint8_t ovk[KEY_LENGTH],
-                                                        uint8_t output[32]) {
-    if (ovk == NULL || note == NULL) {
-        return parser_no_data;
-    }
-
-#if defined(LEDGER_SPECIFIC)
-    cx_blake2b_t ctx = {0};
-    ASSERT_CX_OK(cx_blake2b_init2_no_throw(&ctx, 256, NULL, 0, (uint8_t *)SHARED_KEY_PERSONALIZATION,
-                                           sizeof(SHARED_KEY_PERSONALIZATION)));
-    ASSERT_CX_OK(cx_blake2b_update(&ctx, ovk, 32));
-    ASSERT_CX_OK(cx_blake2b_update(&ctx, note, VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE + EPHEMERAL_PUBLIC_KEY_SIZE));
-    cx_blake2b_final(&ctx, output);
-#else
-    blake2b_state state = {0};
-    blake2b_init_with_personalization(&state, 32, (const uint8_t *)SHARED_KEY_PERSONALIZATION,
-                                      sizeof(SHARED_KEY_PERSONALIZATION));
-    blake2b_update(&state, ovk, 32);
-    blake2b_update(&state, note, VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE + EPHEMERAL_PUBLIC_KEY_SIZE);
-    blake2b_final(&state, output, 32);
-#endif
-
-    return parser_ok;
-}
 
 parser_error_t crypto_decrypt_merkle_note(parser_tx_t *txObj, const uint8_t *m_note, const uint8_t ovk[KEY_LENGTH]) {
     if (ovk == NULL || m_note == NULL) {
         return parser_no_data;
     }
 
-    // Calculate the key used to encrypt the shared keys for a note
-    uint8_t encryption_key[32] = {0};
-    CHECK_ERROR(crypto_calculate_key_for_encryption_keys(m_note, ovk, encryption_key));
-    CHECK_APP_CANARY()
-
-    // Decrypt the note encryption keys
     uint8_t note_encryption_key[ENCRYPTED_SHARED_KEY_SIZE] = {0};
-    uint8_t cc_nonce[CHACHA_NONCE_SIZE] = {0};
-    CHECK_ERROR(chacha(note_encryption_key, sizeof(note_encryption_key), m_note + NOTE_ENCRYPTION_KEYS_OFFSET,
-                       ENCRYPTED_SHARED_KEY_SIZE, encryption_key, cc_nonce, 1));
-#if defined(LEDGER_SPECIFIC)
-        io_seproxyhal_io_heartbeat();
-#endif
-    CHECK_APP_CANARY()
+    if (decrypt_note_encryption_keys(ovk, m_note, note_encryption_key) != parser_ok) {
+        MEMZERO(note_encryption_key, sizeof(note_encryption_key));
+        return parser_unexpected_error;
+    }
 
-    // Extract public address and secret key from the note encryption key
-    uint8_t public_address[PUBLIC_ADDRESS_SIZE] = {0};
-    uint8_t secret_key[SECRET_KEY_SIZE] = {0};
-    MEMCPY(public_address, note_encryption_key, PUBLIC_ADDRESS_SIZE);
-    MEMCPY(secret_key, note_encryption_key + PUBLIC_ADDRESS_SIZE, SECRET_KEY_SIZE);
-
-    // Compute the shared key
-    uint8_t shared_key[32] = {0};
-    const uint8_t *ephemeral_public_key = m_note + VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE;
-    CHECK_ERROR(shared_secret(secret_key, public_address, ephemeral_public_key, shared_key));
-#if defined(LEDGER_SPECIFIC)
-        io_seproxyhal_io_heartbeat();
-#endif
-    CHECK_APP_CANARY()
-
-    // Finally decrypt the note
     uint8_t plain_text[ENCRYPTED_NOTE_SIZE] = {0};
-    CHECK_ERROR(chacha(plain_text, sizeof(plain_text), m_note + ENCRYPTED_NOTE_OFFSET, ENCRYPTED_NOTE_SIZE, shared_key,
-                       cc_nonce, 1));
-#if defined(LEDGER_SPECIFIC)
-        io_seproxyhal_io_heartbeat();
-#endif
-    CHECK_APP_CANARY()
-    // Fill the txObj with the decrypted note
+    const uint8_t *ephemeral_public_key = m_note + VALUE_COMMITMENT_SIZE + NOTE_COMMITMENT_SIZE;
+    if (decrypt_note(m_note, note_encryption_key + PUBLIC_ADDRESS_SIZE, note_encryption_key, ephemeral_public_key,
+                             plain_text) != parser_ok) {
+        MEMZERO(note_encryption_key, sizeof(note_encryption_key));
+        MEMZERO(plain_text, sizeof(plain_text));
+        return parser_unexpected_error;
+    }
+
     txObj->outputs.decrypted_note.value = *(uint64_t *)(plain_text + SCALAR_SIZE);
     MEMCPY(txObj->outputs.decrypted_note.asset_id, plain_text + SCALAR_SIZE + AMOUNT_VALUE_SIZE + MEMO_SIZE,
            ASSET_ID_LENGTH);
-    MEMCPY(txObj->outputs.decrypted_note.owner, public_address, PUBLIC_ADDRESS_SIZE);
+    MEMCPY(txObj->outputs.decrypted_note.owner, note_encryption_key, PUBLIC_ADDRESS_SIZE);
 
     // Clear sensitive data
     MEMZERO(note_encryption_key, sizeof(note_encryption_key));
-    MEMZERO(secret_key, sizeof(secret_key));
-    MEMZERO(shared_key, sizeof(shared_key));
     MEMZERO(plain_text, sizeof(plain_text));
     return parser_ok;
 }
