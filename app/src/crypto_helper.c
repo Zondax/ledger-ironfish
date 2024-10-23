@@ -21,20 +21,13 @@
 #include "keys_personalizations.h"
 #include "rslib.h"
 #include "zxformat.h"
+#include "parser_common.h"
 
 #if defined(LEDGER_SPECIFIC)
 #include "cx.h"
 #include "cx_blake2b.h"
 #endif
 #include "blake2.h"
-
-#define CHECK_PARSER_OK(CALL)           \
-    do {                                \
-        parser_error_t __cx_err = CALL; \
-        if (__cx_err != parser_ok) {    \
-            return zxerr_unknown;       \
-        }                               \
-    } while (0)
 
 parser_error_t convertKey(const uint8_t spendingKey[KEY_LENGTH], const uint8_t modifier, uint8_t outputKey[KEY_LENGTH],
                           bool reduceWideByte) {
