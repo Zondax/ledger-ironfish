@@ -140,6 +140,12 @@ typedef struct {
 } vec_mint_description_t;
 
 typedef struct {
+    uint8_t identifier[32];
+    uint8_t decimals;
+    const char *name;
+} asset_id_lookpup_t;
+
+typedef struct {
     transaction_version_e transactionVersion;
     int64_t fee;
     /// List of spends, or input notes, that have been destroyed.

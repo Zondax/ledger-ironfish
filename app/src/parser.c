@@ -26,7 +26,33 @@
 #include "crypto_helper.h"
 #include "parser_common.h"
 #include "parser_impl.h"
+#include "parser_print_common.h"
 #include "rslib.h"
+
+// lookup table for future use
+static const asset_id_lookpup_t asset_id_lookups[] = {
+    {{0x51, 0xf3, 0x3a, 0x2f, 0x14, 0xf9, 0x27, 0x35, 0xe5, 0x62, 0xdc, 0x65, 0x8a, 0x56, 0x39, 0x27,
+      0x9d, 0xdc, 0xa3, 0xd5, 0x07, 0x9a, 0x6d, 0x12, 0x42, 0xb2, 0xa5, 0x88, 0xa9, 0xcb, 0xf4, 0x4c},
+     8,
+     " IRON"},
+    {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+     8,
+     " UNKNOWN"},
+
+};
+
+parser_error_t parser_verify_asset_id(uint8_t *asset_id, uint8_t *index) {
+    for (size_t i = 0; i < sizeof(asset_id_lookups) / sizeof(asset_id_lookups[0]); i++) {
+        if (MEMCMP(asset_id, PIC(asset_id_lookups[i].identifier), 32) == 0) {
+            *index = i;
+            return parser_ok;
+        }
+    }
+    // Temporarly set to unknown asset
+    *index = 1;
+    return parser_ok;
+}
 
 parser_error_t parser_init_context(parser_context_t *ctx, const uint8_t *buffer, uint16_t bufferSize) {
     ctx->offset = 0;
@@ -68,7 +94,7 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     UNUSED(ctx);
 
     // Txversion + (ownner + amount + asset id) * n_output + fee + expiration
-    *num_items = 1 + ctx->tx_obj->outputs.elements * 3 + 2;
+    *num_items = 1 + ctx->tx_obj->outputs.elements * 2 + 2;
 
     if (*num_items == 0) {
         return parser_unexpected_number_items;
@@ -112,13 +138,10 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
         return parser_ok;
     }
 
+    displayIdx -= 1;
     if (tmp_idx > 0 && tmp_idx <= total_out_elements) {
         tmp_idx = (displayIdx % ELEMENTS_PER_OUTPUT);
-        out_idx = (displayIdx / ELEMENTS_PER_OUTPUT);
-
-        if (tmp_idx == 1 || tmp_idx == 2) {
-            out_idx++;
-        }
+        out_idx = (displayIdx / ELEMENTS_PER_OUTPUT) + 1;
 
         if (prev_decrypted_out_idx != out_idx) {
             const uint8_t *output = ctx->tx_obj->outputs.data.ptr + ((out_idx - 1) * (192 + 328));
@@ -130,28 +153,25 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
     }
 
     char buf[70] = {0};
+    uint8_t asset_id_idx = 0;
     switch (tmp_idx) {
         case 0:
-            snprintf(outKey, outKeyLen, "AssetID %d", out_idx);
-            array_to_hexstr(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.asset_id, 32);
-            pageString(outVal, outValLen, buf, pageIdx, pageCount);
-            return parser_ok;
-        case 1:
-            snprintf(outKey, outKeyLen, "Owner %d", out_idx);
+            snprintf(outKey, outKeyLen, "To %d", out_idx - 1);
             array_to_hexstr(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.owner, 32);
             pageString(outVal, outValLen, buf, pageIdx, pageCount);
             return parser_ok;
+        case 1:
+            snprintf(outKey, outKeyLen, "Amount %d", out_idx - 1);
+            CHECK_ERROR(parser_verify_asset_id(ctx->tx_obj->outputs.decrypted_note.asset_id, &asset_id_idx));
+            CHECK_ERROR(printAmount64(ctx->tx_obj->outputs.decrypted_note.value, asset_id_lookups[asset_id_idx].decimals,
+                                      PIC(asset_id_lookups[asset_id_idx].name), outVal, outValLen, pageIdx, pageCount));
+            return parser_ok;
         case 2:
-            snprintf(outKey, outKeyLen, "Amount %d", out_idx);
-            uint64_to_str(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.value);
-            pageString(outVal, outValLen, buf, pageIdx, pageCount);
+            snprintf(outKey, outKeyLen, "Fee");
+            CHECK_ERROR(printAmount64(ctx->tx_obj->fee, asset_id_lookups[0].decimals, PIC(asset_id_lookups[0].name), outVal,
+                                      outValLen, pageIdx, pageCount));
             return parser_ok;
         case 3:
-            snprintf(outKey, outKeyLen, "Fee");
-            uint64_to_str(buf, sizeof(buf), ctx->tx_obj->fee);
-            pageString(outVal, outValLen, buf, pageIdx, pageCount);
-            return parser_ok;
-        case 4:
             snprintf(outKey, outKeyLen, "Expiration");
             uint32_to_str(buf, sizeof(buf), ctx->tx_obj->expiration);
             pageString(outVal, outValLen, buf, pageIdx, pageCount);
