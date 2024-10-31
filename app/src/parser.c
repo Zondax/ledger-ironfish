@@ -21,6 +21,7 @@
 #include <zxmacros.h>
 #include <zxtypes.h>
 
+#include "app_mode.h"
 #include "coin.h"
 #include "crypto.h"
 #include "crypto_helper.h"
@@ -49,8 +50,14 @@ parser_error_t parser_verify_asset_id(uint8_t *asset_id, uint8_t *index) {
             return parser_ok;
         }
     }
-    // Temporarly set to unknown asset
+#if defined(LEDGER_SPECIFIC)
+    // If no asset id is found, required expert mode
+    if (!app_mode_expert()) {
+        return parser_require_expert_mode;
+    }
+#else
     *index = 1;
+#endif
     return parser_ok;
 }
 
@@ -212,6 +219,8 @@ const char *parser_getErrorDescription(parser_error_t err) {
             return "display index out of range";
         case parser_display_page_out_of_range:
             return "display page out of range";
+        case parser_require_expert_mode:
+            return "Expert mode required";
 
         default:
             return "Unrecognized error code";
