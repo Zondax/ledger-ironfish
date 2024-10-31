@@ -154,6 +154,8 @@ describe('Standard', function () {
       await sim.start({ ...defaultOptions, model: m.name })
       const app = new IronfishApp(sim.getTransport(), false)
 
+      await sim.toggleExpertMode()
+
       const txBlob = Buffer.from(tx_output_3, 'hex')
       const responsePublicAddress = await app.retrieveKeys(PATH, IronfishKeys.PublicAddress, false)
       console.log(responsePublicAddress)
