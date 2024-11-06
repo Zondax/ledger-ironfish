@@ -36,29 +36,43 @@ static const asset_id_lookpup_t asset_id_lookups[] = {
       0x9d, 0xdc, 0xa3, 0xd5, 0x07, 0x9a, 0x6d, 0x12, 0x42, 0xb2, 0xa5, 0x88, 0xa9, 0xcb, 0xf4, 0x4c},
      8,
      " IRON"},
-    {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-     8,
-     " UNKNOWN"},
-
 };
 
-parser_error_t parser_verify_asset_id(uint8_t *asset_id, uint8_t *index) {
+bool parser_verify_asset_id(uint8_t *asset_id, uint8_t *index) {
     for (size_t i = 0; i < sizeof(asset_id_lookups) / sizeof(asset_id_lookups[0]); i++) {
         if (MEMCMP(asset_id, PIC(asset_id_lookups[i].identifier), 32) == 0) {
             *index = i;
-            return parser_ok;
+            return true;
         }
     }
+    return false;
+}
+
+parser_error_t parser_check_outputs(parser_tx_t *tx_obj) {
+    for (size_t i = 0; i < tx_obj->outputs.elements; i++) {
+        const uint8_t *output = tx_obj->outputs.data.ptr + (i * (192 + 328));
+        CHECK_ERROR(crypto_decrypt_merkle_note(tx_obj, output + 192, tx_obj->ovk));
+
+        bool asset_found = false;  // Track if asset ID is found
+        for (size_t j = 0; j < sizeof(asset_id_lookups) / sizeof(asset_id_lookups[0]); j++) {
+            if (MEMCMP(tx_obj->outputs.decrypted_note.asset_id, PIC(asset_id_lookups[j].identifier), 32) == 0) {
+                asset_found = true;  // Asset ID found
+                break;
+            }
+        }
+
+        // Handle case when asset ID is not found
+        if (!asset_found) {
+            tx_obj->n_raw_asset_id++;  // Increment if asset ID is not found
 #if defined(LEDGER_SPECIFIC)
-    // If no asset id is found, required expert mode
-    if (!app_mode_expert()) {
-        return parser_require_expert_mode;
-    }
-#else
-    *index = 1;
+            // Check for expert mode if asset ID is not found
+            if (!app_mode_expert()) {
+                return parser_require_expert_mode;
+            }
 #endif
-    return parser_ok;
+        }
+    }
+    return parser_ok;  // Return parser_ok after processing all outputs
 }
 
 parser_error_t parser_init_context(parser_context_t *ctx, const uint8_t *buffer, uint16_t bufferSize) {
@@ -100,8 +114,10 @@ parser_error_t parser_validate(parser_context_t *ctx) {
 parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_items) {
     UNUSED(ctx);
 
-    // Txversion + (ownner + amount + asset id) * n_output + fee + expiration
-    *num_items = 1 + ctx->tx_obj->outputs.elements * 2 + 2;
+    // Txversion + (owner + amount ) * output_with_valid_asset_id + (owner + amount + asset id) * output_with_raw_asset_id +
+    // fee + expiration
+    *num_items =
+        1 + ((ctx->tx_obj->outputs.elements - ctx->tx_obj->n_raw_asset_id) * 2) + (ctx->tx_obj->n_raw_asset_id * 3) + 2;
 
     if (*num_items == 0) {
         return parser_unexpected_number_items;
@@ -123,8 +139,10 @@ static parser_error_t checkSanity(uint8_t numItems, uint8_t displayIdx) {
     return parser_ok;
 }
 
-uint8_t out_idx = 0;
-uint8_t prev_decrypted_out_idx = 0;
+uint8_t out_idx = 0;                   // Current output index
+uint8_t prev_decrypted_out_idx = 0;    // Previous decrypted output index
+uint8_t cumulative_display_count = 0;  // Track cumulative display items processed
+
 parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
     UNUSED(pageIdx);
@@ -136,58 +154,87 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
     CHECK_ERROR(checkSanity(numItems, displayIdx));
     cleanOutput(outKey, outKeyLen, outVal, outValLen);
 
-    uint64_t total_out_elements = ctx->tx_obj->outputs.elements * ELEMENTS_PER_OUTPUT;
+    // Calculate total output elements
     uint8_t tmp_idx = displayIdx;
+    uint8_t asset_id_idx = 0;
+    bool known_asset_id = false;
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Tx Version");
         snprintf(outVal, outValLen, "V%d", (uint8_t)ctx->tx_obj->transactionVersion);
         return parser_ok;
     }
+    char buf[70] = {0};
+    tmp_idx -= 1;                  // Adjust for the transaction version
+    cumulative_display_count = 0;  // Reset cumulative display count for fresh calculation
 
-    displayIdx -= 1;
-    if (tmp_idx > 0 && tmp_idx <= total_out_elements) {
-        tmp_idx = (displayIdx % ELEMENTS_PER_OUTPUT);
-        out_idx = (displayIdx / ELEMENTS_PER_OUTPUT) + 1;
-
+    for (out_idx = 1; out_idx <= ctx->tx_obj->outputs.elements; out_idx++) {
+        // Decrypt output if needed
         if (prev_decrypted_out_idx != out_idx) {
             const uint8_t *output = ctx->tx_obj->outputs.data.ptr + ((out_idx - 1) * (192 + 328));
             CHECK_ERROR(crypto_decrypt_merkle_note(ctx->tx_obj, output + 192, ctx->tx_obj->ovk));
-            prev_decrypted_out_idx = out_idx;
+            prev_decrypted_out_idx = out_idx;  // Update previous decrypted index
         }
-    } else if (tmp_idx > total_out_elements) {
-        tmp_idx -= total_out_elements - ELEMENTS_PER_OUTPUT + 1;
+
+        // Verify the asset ID
+        known_asset_id = parser_verify_asset_id(ctx->tx_obj->outputs.decrypted_note.asset_id, &asset_id_idx);
+        uint8_t elements_in_output = known_asset_id ? 2 : 3;
+
+        // Check if displayIdx falls within this output's range
+        if (tmp_idx < cumulative_display_count + elements_in_output) {
+            uint8_t local_idx = tmp_idx - cumulative_display_count;
+
+            // Generate output based on the local index
+            switch (local_idx) {
+                case 0:
+                    snprintf(outKey, outKeyLen, "To %d", out_idx - 1);
+                    array_to_hexstr(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.owner, 32);
+                    pageString(outVal, outValLen, buf, pageIdx, pageCount);
+                    return parser_ok;
+
+                case 1:
+                    if (known_asset_id) {
+                        snprintf(outKey, outKeyLen, "Amount %d", out_idx - 1);
+                        CHECK_ERROR(
+                            printAmount64(ctx->tx_obj->outputs.decrypted_note.value, asset_id_lookups[asset_id_idx].decimals,
+                                          PIC(asset_id_lookups[asset_id_idx].name), outVal, outValLen, pageIdx, pageCount));
+                        return parser_ok;
+                    } else {
+                        snprintf(outKey, outKeyLen, "Raw amount %d", out_idx - 1);
+                        uint64_to_str(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.value);
+                        pageString(outVal, outValLen, buf, pageIdx, pageCount);
+                        return parser_ok;
+                    }
+
+                case 2:
+                    snprintf(outKey, outKeyLen, "Raw Asset ID %d", out_idx - 1);
+                    array_to_hexstr(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.asset_id, 32);
+                    pageString(outVal, outValLen, buf, pageIdx, pageCount);
+                    return parser_ok;
+            }
+        }
+
+        cumulative_display_count += elements_in_output;  // Increment for next output
     }
 
-    char buf[70] = {0};
-    uint8_t asset_id_idx = 0;
-    switch (tmp_idx) {
-        case 0:
-            snprintf(outKey, outKeyLen, "To %d", out_idx - 1);
-            array_to_hexstr(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.owner, 32);
-            pageString(outVal, outValLen, buf, pageIdx, pageCount);
-            return parser_ok;
-        case 1:
-            snprintf(outKey, outKeyLen, "Amount %d", out_idx - 1);
-            CHECK_ERROR(parser_verify_asset_id(ctx->tx_obj->outputs.decrypted_note.asset_id, &asset_id_idx));
-            CHECK_ERROR(printAmount64(ctx->tx_obj->outputs.decrypted_note.value, asset_id_lookups[asset_id_idx].decimals,
-                                      PIC(asset_id_lookups[asset_id_idx].name), outVal, outValLen, pageIdx, pageCount));
-            return parser_ok;
-        case 2:
-            snprintf(outKey, outKeyLen, "Fee");
-            CHECK_ERROR(printAmount64(ctx->tx_obj->fee, asset_id_lookups[0].decimals, PIC(asset_id_lookups[0].name), outVal,
-                                      outValLen, pageIdx, pageCount));
-            return parser_ok;
-        case 3:
-            snprintf(outKey, outKeyLen, "Expiration");
-            uint32_to_str(buf, sizeof(buf), ctx->tx_obj->expiration);
-            pageString(outVal, outValLen, buf, pageIdx, pageCount);
-            return parser_ok;
-        default:
-            break;
+    // Handle "Fee" and "Expiration" after all outputs
+    uint8_t additional_elements_start = cumulative_display_count;
+
+    if (tmp_idx == additional_elements_start) {
+        snprintf(outKey, outKeyLen, "Fee");
+        CHECK_ERROR(printAmount64(ctx->tx_obj->fee, asset_id_lookups[0].decimals, PIC(asset_id_lookups[0].name), outVal,
+                                  outValLen, pageIdx, pageCount));
+        return parser_ok;
     }
 
-    return parser_display_idx_out_of_range;
+    if (tmp_idx == additional_elements_start + 1) {
+        snprintf(outKey, outKeyLen, "Expiration");
+        uint32_to_str(buf, sizeof(buf), ctx->tx_obj->expiration);
+        pageString(outVal, outValLen, buf, pageIdx, pageCount);
+        return parser_ok;
+    }
+
+    return parser_display_idx_out_of_range;  // If nothing matched
 }
 
 const char *parser_getErrorDescription(parser_error_t err) {
