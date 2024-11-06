@@ -15,31 +15,15 @@
  ********************************************************************************/
 #pragma once
 
-#include <zxmacros.h>
-
 #include "parser_common.h"
-#include "parser_txdef.h"
-#include "zxtypes.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define ELEMENTS_PER_OUTPUT   2
-#define OUTPUT_ELEMENT_OFFSET 1
-/**
- * @brief Checks that there are at least SIZE bytes available in the buffer.
- * @param CTX Context
- * @param SIZE Size to check
- * @return parser_error_t Error code
- */
-#define CTX_CHECK_AVAIL(CTX, SIZE)                                      \
-    if ((CTX) == NULL || ((CTX)->offset + (SIZE)) > (CTX)->bufferLen) { \
-        return parser_unexpected_buffer_end;                            \
-    }
-
-parser_error_t _read(parser_context_t *c, parser_tx_t *v);
-
+parser_error_t parser_verify_asset_id(uint8_t *asset_id, uint8_t *index);
+parser_error_t printAmount64(uint64_t amount, uint8_t amount_decimals, const char *symbol, char *outVal, uint16_t outValLen,
+                             uint8_t pageIdx, uint8_t *pageCount);
 #ifdef __cplusplus
 }
 #endif
