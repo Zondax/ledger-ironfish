@@ -21,7 +21,6 @@
 extern "C" {
 #endif
 
-parser_error_t parser_verify_asset_id(uint8_t *asset_id, uint8_t *index);
 parser_error_t printAmount64(uint64_t amount, uint8_t amount_decimals, const char *symbol, char *outVal, uint16_t outValLen,
                              uint8_t pageIdx, uint8_t *pageCount);
 #ifdef __cplusplus

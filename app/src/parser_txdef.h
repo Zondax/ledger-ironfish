@@ -177,6 +177,8 @@ typedef struct {
 
     // Not part of the incoming txn but it's used to compute signatures
     uint8_t transactionHash[32];
+
+    uint8_t n_raw_asset_id;
 } parser_tx_t;
 
 #ifdef __cplusplus

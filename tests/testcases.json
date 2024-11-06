@@ -10,12 +10,14 @@
       "2 | Amount 0 : 0.0000004 IRON",
       "3 | To 1 [1/2] : 40fae059d8ee3361b7a08429867254523f937c",
       "3 | To 1 [2/2] : 7654ae6fe7b188c1f0da57e9cd",
-      "4 | Amount 1 : 0.00000005 UNKNOWN",
-      "5 | To 2 [1/2] : 40fae059d8ee3361b7a08429867254523f937c",
-      "5 | To 2 [2/2] : 7654ae6fe7b188c1f0da57e9cd",
-      "6 | Amount 2 : 0.00000001 IRON",
-      "7 | Fee : 0.00000001 IRON",
-      "8 | Expiration : 0"
+      "4 | Raw amount 1 : 5",
+      "5 | Raw Asset ID 1 [1/2] : da40fc530a12327a1c1c367b8bd66ada351005",
+      "5 | Raw Asset ID 1 [2/2] : 01228cdb355b8fb6c40d048a64",
+      "6 | To 2 [1/2] : 40fae059d8ee3361b7a08429867254523f937c",
+      "6 | To 2 [2/2] : 7654ae6fe7b188c1f0da57e9cd",
+      "7 | Amount 2 : 0.00000001 IRON",
+      "8 | Fee : 0.00000001 IRON",
+      "9 | Expiration : 0"
     ],
     "output_expert": [
       "0 | Tx Version : V1",
@@ -24,12 +26,14 @@
       "2 | Amount 0 : 0.0000004 IRON",
       "3 | To 1 [1/2] : 40fae059d8ee3361b7a08429867254523f937c",
       "3 | To 1 [2/2] : 7654ae6fe7b188c1f0da57e9cd",
-      "4 | Amount 1 : 0.00000005 UNKNOWN",
-      "5 | To 2 [1/2] : 40fae059d8ee3361b7a08429867254523f937c",
-      "5 | To 2 [2/2] : 7654ae6fe7b188c1f0da57e9cd",
-      "6 | Amount 2 : 0.00000001 IRON",
-      "7 | Fee : 0.00000001 IRON",
-      "8 | Expiration : 0"
+      "4 | Raw amount 1 : 5",
+      "5 | Raw Asset ID 1 [1/2] : da40fc530a12327a1c1c367b8bd66ada351005",
+      "5 | Raw Asset ID 1 [2/2] : 01228cdb355b8fb6c40d048a64",
+      "6 | To 2 [1/2] : 40fae059d8ee3361b7a08429867254523f937c",
+      "6 | To 2 [2/2] : 7654ae6fe7b188c1f0da57e9cd",
+      "7 | Amount 2 : 0.00000001 IRON",
+      "8 | Fee : 0.00000001 IRON",
+      "9 | Expiration : 0"
     ]
   },
   {
@@ -43,12 +47,14 @@
       "2 | Amount 0 : 0.0000004 IRON",
       "3 | To 1 [1/2] : 40fae059d8ee3361b7a08429867254523f937c",
       "3 | To 1 [2/2] : 7654ae6fe7b188c1f0da57e9cd",
-      "4 | Amount 1 : 0.00000256 UNKNOWN",
-      "5 | To 2 [1/2] : 40fae059d8ee3361b7a08429867254523f937c",
-      "5 | To 2 [2/2] : 7654ae6fe7b188c1f0da57e9cd",
-      "6 | Amount 2 : 0.00000001 IRON",
-      "7 | Fee : 0.00000001 IRON",
-      "8 | Expiration : 85"
+      "4 | Raw amount 1 : 256",
+      "5 | Raw Asset ID 1 [1/2] : da40fc530a12327a1c1c367b8bd66ada351005",
+      "5 | Raw Asset ID 1 [2/2] : 01228cdb355b8fb6c40d048a64",
+      "6 | To 2 [1/2] : 40fae059d8ee3361b7a08429867254523f937c",
+      "6 | To 2 [2/2] : 7654ae6fe7b188c1f0da57e9cd",
+      "7 | Amount 2 : 0.00000001 IRON",
+      "8 | Fee : 0.00000001 IRON",
+      "9 | Expiration : 85"
     ],
     "output_expert": [
       "0 | Tx Version : V1",
@@ -57,12 +63,14 @@
       "2 | Amount 0 : 0.0000004 IRON",
       "3 | To 1 [1/2] : 40fae059d8ee3361b7a08429867254523f937c",
       "3 | To 1 [2/2] : 7654ae6fe7b188c1f0da57e9cd",
-      "4 | Amount 1 : 0.00000256 UNKNOWN",
-      "5 | To 2 [1/2] : 40fae059d8ee3361b7a08429867254523f937c",
-      "5 | To 2 [2/2] : 7654ae6fe7b188c1f0da57e9cd",
-      "6 | Amount 2 : 0.00000001 IRON",
-      "7 | Fee : 0.00000001 IRON",
-      "8 | Expiration : 85"
+      "4 | Raw amount 1 : 256",
+      "5 | Raw Asset ID 1 [1/2] : da40fc530a12327a1c1c367b8bd66ada351005",
+      "5 | Raw Asset ID 1 [2/2] : 01228cdb355b8fb6c40d048a64",
+      "6 | To 2 [1/2] : 40fae059d8ee3361b7a08429867254523f937c",
+      "6 | To 2 [2/2] : 7654ae6fe7b188c1f0da57e9cd",
+      "7 | Amount 2 : 0.00000001 IRON",
+      "8 | Fee : 0.00000001 IRON",
+      "9 | Expiration : 85"
     ]
   }
 ]
