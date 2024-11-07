@@ -187,27 +187,27 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
             // Generate output based on the local index
             switch (local_idx) {
                 case 0:
-                    snprintf(outKey, outKeyLen, "To %d", out_idx - 1);
+                    snprintf(outKey, outKeyLen, "To");
                     array_to_hexstr(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.owner, 32);
                     pageString(outVal, outValLen, buf, pageIdx, pageCount);
                     return parser_ok;
 
                 case 1:
                     if (known_asset_id) {
-                        snprintf(outKey, outKeyLen, "Amount %d", out_idx - 1);
+                        snprintf(outKey, outKeyLen, "Amount");
                         CHECK_ERROR(
                             printAmount64(ctx->tx_obj->outputs.decrypted_note.value, asset_id_lookups[asset_id_idx].decimals,
                                           PIC(asset_id_lookups[asset_id_idx].name), outVal, outValLen, pageIdx, pageCount));
                         return parser_ok;
                     } else {
-                        snprintf(outKey, outKeyLen, "Raw amount %d", out_idx - 1);
+                        snprintf(outKey, outKeyLen, "Raw amount");
                         uint64_to_str(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.value);
                         pageString(outVal, outValLen, buf, pageIdx, pageCount);
                         return parser_ok;
                     }
 
                 case 2:
-                    snprintf(outKey, outKeyLen, "Raw Asset ID %d", out_idx - 1);
+                    snprintf(outKey, outKeyLen, "Raw Asset ID");
                     array_to_hexstr(buf, sizeof(buf), ctx->tx_obj->outputs.decrypted_note.asset_id, 32);
                     pageString(outVal, outValLen, buf, pageIdx, pageCount);
                     return parser_ok;
