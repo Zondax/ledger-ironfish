@@ -114,10 +114,10 @@ parser_error_t parser_validate(parser_context_t *ctx) {
 parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_items) {
     UNUSED(ctx);
 
-    // Txversion + (owner + amount ) * output_with_valid_asset_id + (owner + amount + asset id) * output_with_raw_asset_id +
-    // fee + expiration
+    // Txversion + From + (owner + amount ) * output_with_valid_asset_id + (owner + amount + asset id) *
+    // output_with_raw_asset_id + fee + expiration
     *num_items =
-        1 + ((ctx->tx_obj->outputs.elements - ctx->tx_obj->n_raw_asset_id) * 2) + (ctx->tx_obj->n_raw_asset_id * 3) + 2;
+        2 + ((ctx->tx_obj->outputs.elements - ctx->tx_obj->n_raw_asset_id) * 2) + (ctx->tx_obj->n_raw_asset_id * 3) + 2;
 
     if (*num_items == 0) {
         return parser_unexpected_number_items;
@@ -154,18 +154,33 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
     CHECK_ERROR(checkSanity(numItems, displayIdx));
     cleanOutput(outKey, outKeyLen, outVal, outValLen);
 
-    // Calculate total output elements
     uint8_t tmp_idx = displayIdx;
     uint8_t asset_id_idx = 0;
     bool known_asset_id = false;
+    char buf[70] = {0};
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Tx Version");
         snprintf(outVal, outValLen, "V%d", (uint8_t)ctx->tx_obj->transactionVersion);
         return parser_ok;
     }
-    char buf[70] = {0};
-    tmp_idx -= 1;                  // Adjust for the transaction version
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "From");
+#if defined(LEDGER_SPECIFIC)
+        array_to_hexstr(buf, sizeof(buf), change_address, 32);
+        pageString(outVal, outValLen, buf, pageIdx, pageCount);
+#else
+        uint8_t test_change_address[32] = {0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+                                           0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+                                           0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa};
+        array_to_hexstr(buf, sizeof(buf), test_change_address, 32);
+        pageString(outVal, outValLen, buf, pageIdx, pageCount);
+#endif
+        return parser_ok;
+    }
+
+    tmp_idx -= 2;                  // Adjust for the transaction version
     cumulative_display_count = 0;  // Reset cumulative display count for fresh calculation
 
     for (out_idx = 1; out_idx <= ctx->tx_obj->outputs.elements; out_idx++) {
