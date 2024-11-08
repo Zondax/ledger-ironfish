@@ -50,26 +50,51 @@ bool parser_verify_asset_id(uint8_t *asset_id, uint8_t *index) {
 
 parser_error_t parser_check_outputs(parser_tx_t *tx_obj) {
     for (size_t i = 0; i < tx_obj->outputs.elements; i++) {
+        // Decrypt the output
         const uint8_t *output = tx_obj->outputs.data.ptr + (i * (192 + 328));
         CHECK_ERROR(crypto_decrypt_merkle_note(tx_obj, output + 192, tx_obj->ovk));
 
-        bool asset_found = false;  // Track if asset ID is found
-        for (size_t j = 0; j < sizeof(asset_id_lookups) / sizeof(asset_id_lookups[0]); j++) {
-            if (MEMCMP(tx_obj->outputs.decrypted_note.asset_id, PIC(asset_id_lookups[j].identifier), 32) == 0) {
-                asset_found = true;  // Asset ID found
-                break;
-            }
+        bool is_renderable = true;
+        // If in expert mode show every output
+        if (!app_mode_expert()) {
+            // Verify the output owner
+#if defined(LEDGER_SPECIFIC)
+            is_renderable = MEMCMP(tx_obj->outputs.decrypted_note.owner, change_address, KEY_LENGTH) != 0;
+
+#else
+            is_renderable = true;
+            uint8_t test_change_address[32] = {0x67, 0x3a, 0x8b, 0xfd, 0x38, 0xf9, 0x77, 0xea, 0x1e, 0x51, 0x1a,
+                                               0x40, 0x65, 0x6d, 0x2a, 0x7a, 0x83, 0x22, 0x52, 0xbc, 0x40, 0xc1,
+                                               0x4c, 0x27, 0x60, 0xad, 0x90, 0x64, 0x7d, 0x55, 0xb2, 0xef};
+            is_renderable = MEMCMP(tx_obj->outputs.decrypted_note.owner, test_change_address, KEY_LENGTH) != 0;
+#endif
         }
 
-        // Handle case when asset ID is not found
-        if (!asset_found) {
-            tx_obj->n_raw_asset_id++;  // Increment if asset ID is not found
-#if defined(LEDGER_SPECIFIC)
-            // Check for expert mode if asset ID is not found
-            if (!app_mode_expert()) {
-                return parser_require_expert_mode;
+        if (!is_renderable) {
+            tx_obj->output_render_mask &= ~(1ULL << i);  // Set the bit to 0 if equal
+        } else {
+            tx_obj->output_render_mask |= (1ULL << i);  // Set the bit to 1 if not equal
+            tx_obj->n_rendered_outputs++;
+
+            // If its renderable then we need to check if the asset ID is known
+            bool asset_found = false;  // Track if asset ID is found
+            for (size_t j = 0; j < sizeof(asset_id_lookups) / sizeof(asset_id_lookups[0]); j++) {
+                if (MEMCMP(tx_obj->outputs.decrypted_note.asset_id, PIC(asset_id_lookups[j].identifier), 32) == 0) {
+                    asset_found = true;  // Asset ID found
+                    break;
+                }
             }
+
+            // Handle case when asset ID is not found
+            if (!asset_found) {
+                tx_obj->n_raw_asset_id++;  // Increment if asset ID is not found
+#if defined(LEDGER_SPECIFIC)
+                // Check for expert mode if asset ID is not found
+                if (!app_mode_expert()) {
+                    return parser_require_expert_mode;
+                }
 #endif
+            }
         }
     }
     return parser_ok;  // Return parser_ok after processing all outputs
@@ -117,7 +142,7 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     // Txversion + From + (owner + amount ) * output_with_valid_asset_id + (owner + amount + asset id) *
     // output_with_raw_asset_id + fee + expiration
     *num_items =
-        2 + ((ctx->tx_obj->outputs.elements - ctx->tx_obj->n_raw_asset_id) * 2) + (ctx->tx_obj->n_raw_asset_id * 3) + 2;
+        2 + ((ctx->tx_obj->n_rendered_outputs - ctx->tx_obj->n_raw_asset_id) * 2) + (ctx->tx_obj->n_raw_asset_id * 3) + 2;
 
     if (*num_items == 0) {
         return parser_unexpected_number_items;
@@ -184,6 +209,11 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
     cumulative_display_count = 0;  // Reset cumulative display count for fresh calculation
 
     for (out_idx = 1; out_idx <= ctx->tx_obj->outputs.elements; out_idx++) {
+        // Check if the output index is renderable, if not
+        if (!(ctx->tx_obj->output_render_mask & (1ULL << (out_idx - 1)))) {
+            continue;
+        }
+
         // Decrypt output if needed
         if (prev_decrypted_out_idx != out_idx) {
             const uint8_t *output = ctx->tx_obj->outputs.data.ptr + ((out_idx - 1) * (192 + 328));
