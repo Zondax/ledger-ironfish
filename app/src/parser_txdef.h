@@ -178,7 +178,14 @@ typedef struct {
     // Not part of the incoming txn but it's used to compute signatures
     uint8_t transactionHash[32];
 
+    // Number of outputs with unknown asset ID
     uint8_t n_raw_asset_id;
+
+    // Limiting the number of outputs that can be rendered to 64
+    uint64_t output_render_mask;
+
+    // Number of outputs to be rendered
+    uint8_t n_rendered_outputs;
 } parser_tx_t;
 
 #ifdef __cplusplus
