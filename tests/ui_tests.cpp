@@ -128,3 +128,7 @@ INSTANTIATE_TEST_SUITE_P
 TEST_P(JsonTestsA, CheckUIOutput_CurrentTX_Expert) {
     check_testcase(GetParam(), true);
 }
+
+TEST_P(JsonTestsA, CheckUIOutput_CurrentTX_Normal) {
+    check_testcase(GetParam(), false);
+}
