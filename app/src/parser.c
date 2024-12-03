@@ -123,7 +123,7 @@ parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t d
     return _read(ctx, tx_obj);
 }
 
-uint8_t prev_decrypted_out_idx = 0;  // Previous decrypted output index
+uint64_t prev_decrypted_out_idx = 0;  // Previous decrypted output index
 
 parser_error_t parser_validate(parser_context_t *ctx) {
     // Iterate through all items to check that all can be shown and are valid
@@ -184,8 +184,8 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
     uint8_t tmp_idx = displayIdx;
     uint8_t asset_id_idx = 0;
     uint64_t cumulative_index = 0;
-    uint8_t out_idx = 0;
-    uint8_t out = 0;
+    uint64_t out_idx = 0;
+    uint64_t out = 0;
     uint8_t n_item_out = 0;
     uint8_t total_output_items =
         ((ctx->tx_obj->n_rendered_outputs - ctx->tx_obj->n_raw_asset_id) * 2) + (ctx->tx_obj->n_raw_asset_id * 3);
@@ -215,7 +215,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
 
     tmp_idx -= 2;  // reset tmp_idx to first output screen
     // check if we are about to print outputs or we can move the the remmaining screens
-    if (tmp_idx >= 0 && tmp_idx < total_output_items) {
+    if (tmp_idx < total_output_items) {
         // Find the output that we are about to print
         for (out_idx = 0; out_idx < ctx->tx_obj->outputs.elements; out_idx++) {
             // check if the output is renderable
