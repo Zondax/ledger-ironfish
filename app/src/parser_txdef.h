@@ -183,9 +183,11 @@ typedef struct {
 
     // Limiting the number of outputs that can be rendered to 64
     uint64_t output_render_mask;
+    uint64_t output_raw_asset_id_mask;
 
     // Number of outputs to be rendered
     uint8_t n_rendered_outputs;
+
 } parser_tx_t;
 
 #ifdef __cplusplus
