@@ -38,16 +38,6 @@ static const asset_id_lookpup_t asset_id_lookups[] = {
      " IRON"},
 };
 
-bool parser_verify_asset_id(uint8_t *asset_id, uint8_t *index) {
-    for (size_t i = 0; i < sizeof(asset_id_lookups) / sizeof(asset_id_lookups[0]); i++) {
-        if (MEMCMP(asset_id, PIC(asset_id_lookups[i].identifier), 32) == 0) {
-            *index = i;
-            return true;
-        }
-    }
-    return false;
-}
-
 parser_error_t parser_check_outputs(parser_tx_t *tx_obj) {
     for (size_t i = 0; i < tx_obj->outputs.elements; i++) {
         // Decrypt the output
