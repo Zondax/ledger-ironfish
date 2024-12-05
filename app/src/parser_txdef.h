@@ -98,8 +98,6 @@ typedef struct {
     uint8_t metadata[METADATA_LENGTH];
     public_address_t creator;
     uint8_t nonce;
-    /// The byte representation of a blake2s hash of the asset info
-    // uint8_t id[32];
 } asset_t;
 
 typedef struct {
